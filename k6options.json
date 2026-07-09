@@ -1,0 +1,8 @@
+{
+    "vus": 5,
+    "duration": "8s",
+    "thresholds": {
+      "http_req_duration": ["avg<200", "p(90)<300", "max<500"]
+    }
+  }
+  

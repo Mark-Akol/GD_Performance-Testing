@@ -1,0 +1,4 @@
+/node_modules
+k6.env.*.json
+config.json
+dist

@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["es2019", "dom"],
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["k6"],
+    "baseUrl": ".",
+    "paths": {
+      "@support/*": ["CLMPerformanceTesting/support/*"],
+      "@teardown/*": ["CLMPerformanceTesting/teardown/*"],
+      "@auth/*": ["CLMPerformanceTesting/auth/*"]
+    }
+  },
+  "include": [
+    "CLMPerformanceTesting/**/*.ts",
+    "k6.env.*.json"
+  ],
+  "exclude": ["dist", "node_modules"]
+}

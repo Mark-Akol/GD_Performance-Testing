@@ -1,0 +1,16 @@
+{
+  "name": "clm-performance-testing",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build:config:qa": "node generate-config.js qa",
+    "test:qa": "k6 run CLMPerformanceTesting/perfTests/Search/filterSearchQA.ts",
+    "test:qa:debug": "k6 run -e DEBUG_RESPONSES=true CLMPerformanceTesting/perfTests/Search/filterSearchQA.ts",
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --project tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "@types/k6": "^0.47.0",
+    "typescript": "^5.4.5"
+  }
+}
