@@ -1,71 +1,93 @@
+import { BlurView } from 'expo-blur';
 import { Redirect, Tabs } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import type { ComponentProps } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { tap } from '../../components/ui';
 import { useAkol } from '../../lib/store';
-import { colors, fonts, SLANT, stroke } from '../../theme';
+import { colors, fonts, radius } from '../../theme';
 
-const TABS: { name: string; title: string; kanji: string }[] = [
-  { name: 'index', title: 'Today', kanji: '今日' },
-  { name: 'family', title: 'Party', kanji: '家族' },
-  { name: 'routines', title: 'Routines', kanji: '日課' },
-  { name: 'settings', title: 'Settings', kanji: '設定' },
+type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
+
+const TABS: { name: string; title: string }[] = [
+  { name: 'index', title: 'Today' },
+  { name: 'family', title: 'Family' },
+  { name: 'routines', title: 'Routines' },
+  { name: 'settings', title: 'Settings' },
 ];
+
+/** A floating glass capsule rather than a bar pinned to the edge. */
+function GlassTabBar({ state, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.wrap, { bottom: insets.bottom + 14 }]} pointerEvents="box-none">
+      <View style={styles.capsule}>
+        {Platform.OS !== 'android' && <BlurView tint="dark" intensity={40} style={StyleSheet.absoluteFill} />}
+        {state.routes.map((route, i) => {
+          const focused = state.index === i;
+          const title = TABS.find((t) => t.name === route.name)?.title ?? route.name;
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: focused }}
+              onPress={() => {
+                tap();
+                const e = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                if (!focused && !e.defaultPrevented) navigation.navigate(route.name);
+              }}
+              style={styles.item}
+            >
+              <Text style={[styles.label, focused && styles.labelActive]}>{title}</Text>
+              <View style={[styles.dot, focused && styles.dotActive]} />
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const { state } = useAkol();
-  const insets = useSafeAreaInsets();
   if (!state.settings.onboarded) return <Redirect href="/welcome" />;
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        sceneStyle: { backgroundColor: colors.bg },
-        tabBarStyle: {
-          position: 'absolute',
-          borderTopWidth: 0,
-          height: 70 + insets.bottom,
-          paddingTop: 10,
-          paddingBottom: insets.bottom + 10,
-          backgroundColor: colors.bg,
-          elevation: 0,
-        },
-        tabBarBackground: () => <View style={[StyleSheet.absoluteFill, styles.bar]} />,
-        tabBarIconStyle: { display: 'none' },
-      }}
+      tabBar={(props) => <GlassTabBar {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
     >
       {TABS.map((t) => (
-        <Tabs.Screen
-          key={t.name}
-          name={t.name}
-          options={{
-            title: t.title,
-            tabBarIcon: () => null,
-            // Each tab is a slanted caption block; the current one is inked solid.
-            tabBarLabel: ({ focused }) => (
-              <View style={[styles.tab, focused && styles.tabActive]}>
-                <Text style={[styles.label, focused && { color: colors.bg }]}>{t.title}</Text>
-                <Text style={[styles.kanji, focused && { color: colors.bg }]}>{t.kanji}</Text>
-              </View>
-            ),
-          }}
-        />
+        <Tabs.Screen key={t.name} name={t.name} options={{ title: t.title }} />
       ))}
     </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { backgroundColor: colors.bg, borderTopWidth: stroke.heavy, borderTopColor: colors.ink },
-  tab: {
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    minWidth: 76,
-    transform: [{ skewX: SLANT }],
+  wrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
+  capsule: {
+    width: '100%',
+    maxWidth: 520,
+    height: 62,
+    flexDirection: 'row',
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: 'rgba(16,14,22,0.78)',
+    ...(Platform.OS === 'web' ? ({ backdropFilter: 'blur(18px)' } as object) : {}),
   },
-  tabActive: { backgroundColor: colors.ink },
-  label: { fontFamily: fonts.display, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.ink },
-  kanji: { fontFamily: fonts.display, fontSize: 9, color: colors.textDim, marginTop: 1 },
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  label: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: colors.textFaint },
+  labelActive: { color: colors.ink },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'transparent' },
+  dotActive: {
+    backgroundColor: colors.ink,
+    shadowColor: colors.ink,
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
 });

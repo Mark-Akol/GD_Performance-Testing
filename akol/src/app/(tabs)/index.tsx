@@ -1,38 +1,57 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Avatar } from '../../components/Avatar';
+import { Avatar, jewelFor } from '../../components/Avatar';
 import { Timeline } from '../../components/Checklist';
-import { Burst, CaptionTab, Panel, SFX } from '../../components/Manga';
-import { Card, Dim, InkButton, Screen, SectionHeader, Segmented } from '../../components/ui';
+import { Orrery, type OrbitRing } from '../../components/three/Orrery';
+import { Card, Dim, FadeIn, InkButton, Screen, SectionHeader, Segmented, tap } from '../../components/ui';
 import {
   FAMILY_ID,
   atTime,
+  checkpointSummary,
   dayKey,
   formatTime,
   greeting,
+  isDone,
+  minutesOfDay,
   nextUp,
   overdue,
+  parseTime,
   progress,
   relative,
-  streak,
+  taskStatus,
   tasksForDay,
 } from '../../lib/schedule';
 import { useAkol, useNow } from '../../lib/store';
 import type { Task } from '../../lib/types';
-import { colors, fonts, lining, SLANT, space, stroke } from '../../theme';
+import { colors, fonts, gradients, lining, radius, space } from '../../theme';
 
 type Scope = 'mine' | 'family';
 
-function dayOfYear(d: Date) {
-  return Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000);
+function groupByRoutine(tasks: Task[]) {
+  const out: { routineId: string; tasks: Task[] }[] = [];
+  for (const t of tasks) {
+    const g = out.find((x) => x.routineId === t.routineId);
+    if (g) g.tasks.push(t);
+    else out.push({ routineId: t.routineId, tasks: [t] });
+  }
+  return out;
+}
+
+/** The slice of the day a routine covers, padded a little either side. */
+function windowOf(tasks: Task[]) {
+  const mins = tasks.map((t) => parseTime(t.time));
+  return { from: Math.min(...mins) - 10, to: Math.max(...mins) + 10 };
 }
 
 export default function Today() {
-  const { state, me, member, routine, dispatch } = useAkol();
+  const { state, me, member, routine, dispatch, toggle } = useAkol();
   const now = useNow();
   const [scope, setScope] = useState<Scope>('mine');
+  const [pick, setPick] = useState<number | null>(null);
   const today = dayKey(now);
 
   const all = useMemo(() => tasksForDay(state, now), [state, now]);
@@ -44,150 +63,173 @@ export default function Today() {
   const p = progress(visible, state.completions, today);
   const allDone = p.total > 0 && p.done === p.total;
 
-  const groups = useMemo(() => {
-    const out: { routineId: string; tasks: Task[] }[] = [];
-    for (const t of visible) {
-      const g = out.find((x) => x.routineId === t.routineId);
-      if (g) g.tasks.push(t);
-      else out.push({ routineId: t.routineId, tasks: [t] });
-    }
-    return out;
-  }, [visible]);
+  const groups = useMemo(() => groupByRoutine(visible), [visible]);
+  const orbitGroups = useMemo(() => groupByRoutine(all), [all]);
 
-  const dd = String(now.getDate()).padStart(2, '0');
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const weekday = now.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
-  const nextWho = next ? (next.task.memberId === FAMILY_ID ? 'EVERYONE' : member(next.task.memberId)?.name.toUpperCase()) : undefined;
-  const minsLeft = next ? Math.round((atTime(now, next.task.time).getTime() - now.getTime()) / 60000) : 0;
+  // The orrery shows the routine happening now, else the next one today, else the first.
+  const nowMins = minutesOfDay(now);
+  const auto = Math.max(0, orbitGroups.findIndex((g) => windowOf(g.tasks).to >= nowMins));
+  const idx = pick !== null && pick < orbitGroups.length ? pick : auto;
+  const active = orbitGroups[idx];
+
+  const scene = useMemo(() => {
+    if (!active) return null;
+    const { from, to } = windowOf(active.tasks);
+    const frac = (t: string) => (parseTime(t) - from) / (to - from);
+    const chores = active.tasks.filter((t) => !t.checkpoint);
+    const ids = [...new Set(chores.map((t) => t.memberId))];
+    const rings: OrbitRing[] = ids.map((id) => {
+      const j = jewelFor(member(id), id);
+      return {
+        id,
+        hex: j.hex,
+        metal: j.metal,
+        beads: chores
+          .filter((t) => t.memberId === id)
+          .map((t) => {
+            const done = isDone(state.completions, today, t.id);
+            const st = taskStatus(t, done, now);
+            return { id: t.id, frac: frac(t.time), done, due: st === 'due', late: st === 'overdue' };
+          }),
+      };
+    });
+    const cp = active.tasks.find((t) => t.checkpoint);
+    const sum = cp ? checkpointSummary(cp, state, state.completions, today) : null;
+    const ratio = sum ? sum.done.length / Math.max(1, sum.done.length + sum.outstanding.length) : undefined;
+    return { rings, nowFrac: (nowMins - from) / (to - from), ratio, ids };
+  }, [active, state, today, now, nowMins, member]);
+
+  const nextWho = next ? (next.task.memberId === FAMILY_ID ? 'Everyone' : member(next.task.memberId)?.name) : undefined;
+  const dateLine = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <Screen>
-      {/* Title bar */}
-      <View style={styles.top}>
-        <View style={{ flex: 1 }}>
-          <View style={styles.logoRow}>
-            <Text style={styles.logo}>AKOL</Text>
-            <Text style={styles.logoKana}>アコル</Text>
+      <FadeIn>
+        <View style={styles.top}>
+          <View style={{ flex: 1, gap: space.sm }}>
+            <Text style={styles.date}>{dateLine}</Text>
+            {state.settings.demoClock && (
+              <Pressable
+                onPress={() => dispatch({ type: 'settings', patch: { demoClock: null } })}
+                style={styles.demo}
+                accessibilityRole="button"
+              >
+                <View style={styles.demoDot} />
+                <Text style={styles.demoText}>
+                  Demo clock {formatTime(`${now.getHours()}:${now.getMinutes()}`)} · tap for real time
+                </Text>
+              </Pressable>
+            )}
           </View>
-          <View style={styles.epRow}>
-            <CaptionTab>EP.{dayOfYear(now)}</CaptionTab>
-            <Text style={styles.date}>
-              {weekday} {dd}.{mm}
-            </Text>
-          </View>
+          <Pressable onPress={() => router.push('/settings')} accessibilityLabel="Settings">
+            <Avatar member={me} size={50} ratio={progress(mine, state.completions, today).ratio} />
+          </Pressable>
         </View>
-        <Pressable onPress={() => router.push('/settings')} accessibilityLabel="Settings">
-          <Avatar member={me} size={56} ratio={progress(mine, state.completions, today).ratio} />
-        </Pressable>
-      </View>
-      {state.settings.demoClock && (
-        <Pressable
-          onPress={() => dispatch({ type: 'settings', patch: { demoClock: null } })}
-          style={styles.demo}
-          accessibilityRole="button"
-        >
-          <Text style={styles.demoText}>
-            ▶ DEMO CLOCK {formatTime(`${now.getHours()}:${now.getMinutes()}`).toUpperCase()} · TAP FOR REAL TIME
-          </Text>
-        </Pressable>
-      )}
+      </FadeIn>
 
-      {/* Splash panel: the next mission */}
-      <View style={{ marginTop: space.lg }}>
-        <Panel lines={{ x: 0.85, y: 0.25, clear: 0.2, count: 80 }} style={{ padding: space.xl, minHeight: 240 }}>
-          <View style={styles.heroWhite} />
-          <View style={styles.heroTop}>
-            <CaptionTab>{allDone ? 'Mission complete' : next?.status === 'due' ? 'Now!!' : 'Next mission'}</CaptionTab>
+      <FadeIn delay={120}>
+        <Text style={styles.greeting}>{greeting(now)},</Text>
+        <Text style={styles.name}>{me?.name ?? 'there'}</Text>
+      </FadeIn>
+
+      {/* The orrery */}
+      {active && scene ? (
+        <FadeIn delay={240} style={styles.orreryWrap}>
+          <Orrery
+            rings={scene.rings}
+            nowFrac={scene.nowFrac}
+            checkpointRatio={scene.ratio}
+            onToggle={(id) => {
+              tap('success');
+              toggle(id, today);
+            }}
+            height={400}
+          />
+          <View style={styles.orreryHead} pointerEvents="box-none">
+            {orbitGroups.length > 1 && (
+              <Pressable hitSlop={12} onPress={() => setPick((idx - 1 + orbitGroups.length) % orbitGroups.length)}>
+                <Ionicons name="chevron-back" size={16} color={colors.ink} />
+              </Pressable>
+            )}
+            <Text style={styles.orreryTitle}>{routine(active.routineId)?.name ?? 'Routine'}</Text>
+            {orbitGroups.length > 1 && (
+              <Pressable hitSlop={12} onPress={() => setPick((idx + 1) % orbitGroups.length)}>
+                <Ionicons name="chevron-forward" size={16} color={colors.ink} />
+              </Pressable>
+            )}
           </View>
-          <Text style={styles.kicker}>
-            {greeting(now).toUpperCase()}, {(me?.name ?? 'HERO').toUpperCase()}
-          </Text>
-          <Text style={styles.headline}>
-            {allDone ? 'All quests cleared!' : next ? next.task.title : p.total ? 'Nothing left today' : 'A quiet day'}
+          <View style={styles.legend} pointerEvents="box-none">
+            {scene.ids.map((id) => {
+              const m = member(id);
+              const j = jewelFor(m, id);
+              const mp = progress(
+                active.tasks.filter((t) => t.memberId === id),
+                state.completions,
+                today,
+              );
+              return (
+                <Pressable key={id} style={styles.legendItem} onPress={() => m && router.push(`/member/${m.id}`)}>
+                  <View style={[styles.legendDot, { backgroundColor: j.hex, shadowColor: j.hex }]} />
+                  <Text style={styles.legendName}>{m?.name ?? 'Everyone'}</Text>
+                  <Text style={styles.legendCount}>
+                    {mp.done}/{mp.total}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.hint}>Tap a gem to tick it off · move to look around</Text>
+        </FadeIn>
+      ) : null}
+
+      {/* Next up */}
+      <FadeIn delay={360}>
+        <Card glow style={{ marginTop: space.lg }}>
+          <Text style={styles.nextLabel}>{allDone ? 'All complete' : next ? (next.status === 'due' ? 'Due now' : 'Next up') : 'Today'}</Text>
+          <Text style={styles.nextTitle}>
+            {allDone ? 'Beautifully done.' : next ? next.task.title : p.total ? 'Nothing further today.' : 'A quiet day.'}
           </Text>
           {next && !allDone && (
-            <View style={styles.heroMeta}>
-              <View style={styles.timeTag}>
-                <Text style={styles.timeTagText}>{formatTime(next.task.time).toUpperCase().replace(/\./g, '')}</Text>
-              </View>
-              <Text style={styles.heroRel}>{relative(atTime(now, next.task.time), now).toUpperCase()}</Text>
-              {nextWho && <Text style={styles.heroWho}>▸ {nextWho}</Text>}
+            <View style={styles.nextMeta}>
+              <LinearGradient colors={gradients.ink} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.timePill}>
+                <Text style={styles.timePillText}>{formatTime(next.task.time)}</Text>
+              </LinearGradient>
+              <Text style={styles.nextRel}>{relative(atTime(now, next.task.time), now)}</Text>
+              {nextWho && <Text style={styles.nextWho}>· {nextWho}</Text>}
             </View>
           )}
-          {next && !allDone && minsLeft > 0 && (
-            <Burst size={86} style={styles.heroBurst} seed={9}>
-              <Text style={styles.burstNum}>{minsLeft}</Text>
-              <Text style={styles.burstUnit}>MIN</Text>
-            </Burst>
-          )}
-          <SFX text={allDone ? 'キラッ' : late.length ? 'ゴゴゴ' : 'ドン'} size={32} rotate={-14} style={styles.heroSfx} />
-        </Panel>
-      </View>
+          <View style={styles.stats}>
+            <Stat value={`${p.done}/${p.total}`} label="Done" />
+            <View style={styles.statRule} />
+            <Stat value={String(late.length)} label="Late" warn={late.length > 0} />
+            <View style={styles.statRule} />
+            <Stat value={`${Math.round(p.ratio * 100)}%`} label="Complete" />
+          </View>
+        </Card>
+      </FadeIn>
 
-      {/* Stat panels */}
-      <View style={styles.stats}>
-        <StatPanel label="Cleared" value={`${p.done}/${p.total}`} tilt={-1.2} />
-        <StatPanel label="Late" value={String(late.length)} tilt={1} tone={late.length ? 0.45 : undefined} />
-        <StatPanel label="Sync" value={`${Math.round(p.ratio * 100)}%`} tilt={-0.6} />
-      </View>
-
-      {/* The party */}
-      <SectionHeader title="The party" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.party}>
-        {state.members.map((m, i) => {
-          const mp = progress(
-            all.filter((t) => t.memberId === m.id),
-            state.completions,
-            today,
-          );
-          const combo = streak(state, m.id, now);
-          return (
-            <Pressable key={m.id} onPress={() => router.push(`/member/${m.id}`)}>
-              <Panel tilt={i % 2 ? 1.2 : -1.2} style={styles.charCard}>
-                <View style={styles.charTone} />
-                <Avatar member={m} size={58} ratio={mp.ratio} />
-                <Text style={styles.charName} numberOfLines={1}>
-                  {m.name.toUpperCase()}
-                </Text>
-                <Text style={styles.charRole}>{m.id === me?.id ? 'YOU' : m.role.toUpperCase()}</Text>
-                <View style={styles.hpBar}>
-                  <View style={[styles.hpFill, { width: `${mp.ratio * 100}%` }]} />
-                </View>
-                <Text style={styles.charStat}>
-                  {mp.done}/{mp.total} {combo > 0 ? `· COMBO ×${combo}` : ''}
-                </Text>
-              </Panel>
-            </Pressable>
-          );
-        })}
-        <Pressable onPress={() => router.push('/member-edit')} style={styles.addCard}>
-          <Text style={styles.addPlus}>+</Text>
-          <Text style={styles.addText}>NEW{'\n'}MEMBER</Text>
-        </Pressable>
-      </ScrollView>
-
-      <View style={{ marginTop: space.lg }}>
+      <FadeIn delay={460} style={{ marginTop: space.xl }}>
         <Segmented<Scope>
           value={scope}
           onChange={setScope}
           options={[
-            { value: 'mine', label: 'My quests' },
-            { value: 'family', label: 'Party quests' },
+            { value: 'mine', label: 'My list' },
+            { value: 'family', label: 'Whole family' },
           ]}
         />
-      </View>
+      </FadeIn>
 
       {groups.length === 0 ? (
         <Card style={{ marginTop: space.xl, alignItems: 'center', gap: space.md }}>
-          <SFX text="シーン" size={36} rotate={0} />
-          <Dim style={{ textAlign: 'center' }}>Nothing scheduled today. Enjoy the calm, or plan a routine.</Dim>
+          <Text style={styles.quiet}>Nothing today.</Text>
+          <Dim style={{ textAlign: 'center' }}>Enjoy the calm, or plan a routine.</Dim>
           <InkButton label="Plan a routine" onPress={() => router.push('/routines')} />
         </Card>
       ) : (
-        groups.map((g) => {
+        groups.map((g, i) => {
           const gp = progress(g.tasks, state.completions, today);
           return (
-            <View key={g.routineId}>
+            <FadeIn key={g.routineId} delay={540 + i * 80}>
               <SectionHeader
                 title={routine(g.routineId)?.name ?? 'Routine'}
                 right={
@@ -197,116 +239,90 @@ export default function Today() {
                 }
               />
               <Timeline tasks={g.tasks} day={today} now={now} showMember={scope === 'family'} />
-            </View>
+            </FadeIn>
           );
         })
       )}
-
-      <View style={styles.tbc}>
-        <Text style={styles.tbcText}>To be continued</Text>
-        <Text style={styles.tbcArrow}>⟶</Text>
-      </View>
-      <Dim style={styles.tip}>Tap a quest to clear it · press and hold to edit</Dim>
+      <Dim style={styles.tip}>Tap to tick off · press and hold to edit</Dim>
     </Screen>
   );
 }
 
-function StatPanel({ label, value, tilt, tone }: { label: string; value: string; tilt: number; tone?: number }) {
+function Stat({ value, label, warn }: { value: string; label: string; warn?: boolean }) {
   return (
-    <View style={{ flex: 1 }}>
-      <Panel tilt={tilt} tone={tone} style={styles.statPanel}>
-        <View style={styles.statInner}>
-          <Text style={styles.statValue}>{value}</Text>
-          <Text style={styles.statLabel}>{label}</Text>
-        </View>
-      </Panel>
+    <View style={styles.stat}>
+      <Text style={[styles.statValue, warn && { color: colors.danger }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
-  logoRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-  logo: { fontFamily: fonts.display, fontSize: 40, lineHeight: 46, color: colors.ink, letterSpacing: 1 },
-  logoKana: { fontFamily: fonts.display, fontSize: 13, color: colors.ink, marginBottom: 8 },
-  epRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: 4 },
-  date: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 2, color: colors.ink },
+  date: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 3, textTransform: 'uppercase', color: colors.ink, marginTop: 6 },
   demo: {
-    alignSelf: 'flex-start',
-    marginTop: space.md,
-    borderWidth: stroke.line,
-    borderColor: colors.ink,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    transform: [{ skewX: SLANT }],
-  },
-  demoText: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 1, color: colors.ink },
-  heroWhite: {
-    position: 'absolute',
-    left: -60,
-    top: -10,
-    width: '82%',
-    bottom: -10,
-    backgroundColor: colors.bg,
-    transform: [{ skewX: '-8deg' }],
-  },
-  heroTop: { flexDirection: 'row' },
-  kicker: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 2.4, color: colors.ink, marginTop: space.md },
-  headline: {
-    fontFamily: fonts.display,
-    fontSize: 36,
-    lineHeight: 44,
-    color: colors.ink,
-    textTransform: 'uppercase',
-    marginTop: space.xs,
-    maxWidth: '78%',
-  },
-  heroMeta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.md, flexWrap: 'wrap' },
-  timeTag: { backgroundColor: colors.ink, paddingHorizontal: 8, paddingVertical: 3, transform: [{ skewX: SLANT }] },
-  timeTagText: { fontFamily: fonts.display, fontSize: 13, color: colors.bg, ...lining },
-  heroRel: { fontFamily: fonts.displayItalic, fontSize: 14, letterSpacing: 1, color: colors.ink },
-  heroWho: { fontFamily: fonts.display, fontSize: 12, letterSpacing: 1, color: colors.ink, backgroundColor: colors.bg, paddingHorizontal: 4 },
-  heroBurst: { position: 'absolute', right: 10, top: 14 },
-  burstNum: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, color: colors.ink, ...lining },
-  burstUnit: { fontFamily: fonts.semibold, fontSize: 9, letterSpacing: 1.5, color: colors.ink, marginTop: -3 },
-  heroSfx: { position: 'absolute', right: 2, top: 108 },
-  stats: { flexDirection: 'row', gap: space.md, marginTop: space.lg },
-  statPanel: { padding: 0, paddingVertical: space.md },
-  statInner: { alignItems: 'center', backgroundColor: colors.bg, alignSelf: 'center', paddingHorizontal: 6 },
-  statValue: { fontFamily: fonts.display, fontSize: 24, lineHeight: 30, color: colors.ink, ...lining },
-  statLabel: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 2, color: colors.ink, textTransform: 'uppercase' },
-  party: { gap: space.lg, paddingVertical: space.xs, paddingRight: space.lg, paddingLeft: 2 },
-  charCard: { width: 128, alignItems: 'center', gap: 4, paddingVertical: space.md, paddingHorizontal: space.sm },
-  charTone: { position: 'absolute', left: 0, right: 0, top: 0, height: 38, backgroundColor: colors.bg },
-  charName: { fontFamily: fonts.display, fontSize: 16, color: colors.ink, marginTop: 4 },
-  charRole: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 2, color: colors.textDim },
-  hpBar: { alignSelf: 'stretch', height: 8, borderWidth: stroke.line, borderColor: colors.ink, marginTop: 4 },
-  hpFill: { height: '100%', backgroundColor: colors.ink },
-  charStat: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1, color: colors.ink, ...lining },
-  addCard: {
-    width: 96,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: stroke.line,
-    borderStyle: 'dashed',
-    borderColor: colors.ink,
-    marginVertical: 6,
-  },
-  addPlus: { fontFamily: fonts.display, fontSize: 32, color: colors.ink },
-  addText: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.5, color: colors.ink, textAlign: 'center' },
-  groupCount: { fontFamily: fonts.display, fontSize: 14, color: colors.ink, ...lining },
-  tbc: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.sm,
-    alignSelf: 'flex-end',
-    marginTop: space.xxl,
-    backgroundColor: colors.ink,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    transform: [{ skewX: SLANT }],
+    gap: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: 'rgba(255,250,240,0.05)',
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  tbcText: { fontFamily: fonts.displayItalic, fontSize: 14, letterSpacing: 1, color: colors.bg, textTransform: 'uppercase' },
-  tbcArrow: { fontFamily: fonts.display, fontSize: 18, color: colors.bg },
-  tip: { textAlign: 'center', fontSize: 12, marginTop: space.lg, color: colors.textFaint },
+  demoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.ink },
+  demoText: { fontFamily: fonts.medium, fontSize: 11, color: colors.textDim },
+  greeting: { fontFamily: fonts.italic, fontSize: 28, lineHeight: 34, color: colors.textDim, marginTop: space.lg },
+  name: { fontFamily: fonts.masthead, fontSize: 76, lineHeight: 80, color: colors.ink, letterSpacing: -1 },
+  orreryWrap: { marginHorizontal: -18, marginTop: -space.md },
+  orreryHead: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  orreryTitle: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 3, textTransform: 'uppercase', color: colors.text },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.lg, marginTop: -space.xl },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: 'rgba(16,14,22,0.6)',
+  },
+  legendDot: { width: 8, height: 8, borderRadius: 4, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
+  legendName: { fontFamily: fonts.medium, fontSize: 13, color: colors.text },
+  legendCount: { fontFamily: fonts.italic, fontSize: 15, color: colors.textDim, ...lining },
+  hint: { fontFamily: fonts.light, fontSize: 12, color: colors.textFaint, textAlign: 'center', marginTop: space.sm },
+  nextLabel: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 3, textTransform: 'uppercase', color: colors.ink },
+  nextTitle: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, color: colors.text, marginTop: space.xs },
+  nextMeta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.md, flexWrap: 'wrap' },
+  timePill: { borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 },
+  timePillText: { fontFamily: fonts.semibold, fontSize: 13, color: '#1A1206', ...lining },
+  nextRel: { fontFamily: fonts.italic, fontSize: 18, color: colors.ink },
+  nextWho: { fontFamily: fonts.medium, fontSize: 14, color: colors.textDim },
+  stats: {
+    flexDirection: 'row',
+    marginTop: space.lg,
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.hairline,
+  },
+  stat: { flex: 1, alignItems: 'center' },
+  statRule: { width: 1, backgroundColor: colors.hairline },
+  statValue: { fontFamily: fonts.display, fontSize: 30, color: colors.text, ...lining },
+  statLabel: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 2.4, textTransform: 'uppercase', color: colors.textDim },
+  groupCount: { fontFamily: fonts.italic, fontSize: 16, color: colors.ink, ...lining },
+  quiet: { fontFamily: fonts.masthead, fontSize: 36, color: colors.text },
+  tip: { textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint },
 });

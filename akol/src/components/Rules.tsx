@@ -1,47 +1,40 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, SLANT, stroke } from '../theme';
+import { colors } from '../theme';
 
-/** A single inked rule. */
-export function Rule({ weight = stroke.line, style }: { weight?: number; style?: StyleProp<ViewStyle> }) {
-  return <View style={[{ height: weight, backgroundColor: colors.ink, alignSelf: 'stretch' }, style]} />;
+const FADE = ['rgba(232,199,138,0)', 'rgba(232,199,138,0.55)', 'rgba(232,199,138,0)'] as const;
+
+/** A gold hairline that fades out at both ends. */
+export function Rule({ style }: { weight?: number; style?: StyleProp<ViewStyle> }) {
+  return <LinearGradient colors={FADE} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[{ height: 1, alignSelf: 'stretch' }, style]} />;
 }
 
-/** Heavy over fine, like the top of a manga page. */
 export function DoubleRule({ style }: { inverted?: boolean; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={[styles.double, style]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Rule weight={stroke.heavy} />
-      <Rule weight={stroke.fine} />
+    <View style={[{ gap: 3, alignSelf: 'stretch' }, style]}>
+      <Rule />
+      <Rule />
     </View>
   );
 }
 
-/** A heavy rule broken by three slanted blocks: ▰▰▰ */
+/** Hairline — ◆ — hairline */
 export function Fleuron({ style }: { glyph?: string; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.fleuron, style]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View style={styles.hair} />
-      <View style={styles.blocks}>
-        <View style={styles.block} />
-        <View style={styles.block} />
-        <View style={styles.block} />
-      </View>
-      <View style={styles.hair} />
+      <Rule style={{ flex: 1 }} />
+      <View style={styles.gem} />
+      <Rule style={{ flex: 1 }} />
     </View>
   );
 }
 
-/** A small slanted ink block that leads a label. */
 export function Dingbat() {
-  return <View style={styles.dot} />;
+  return <View style={styles.gem} />;
 }
 
 const styles = StyleSheet.create({
-  double: { gap: 3, alignSelf: 'stretch' },
   fleuron: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
-  hair: { flex: 1, height: stroke.line, backgroundColor: colors.ink },
-  blocks: { flexDirection: 'row', gap: 4 },
-  block: { width: 10, height: 8, backgroundColor: colors.ink, transform: [{ skewX: SLANT }] },
-  dot: { width: 8, height: 10, backgroundColor: colors.ink, transform: [{ skewX: SLANT }] },
+  gem: { width: 6, height: 6, backgroundColor: colors.ink, transform: [{ rotate: '45deg' }] },
 });

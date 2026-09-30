@@ -19,14 +19,16 @@ shows everyone's open items.
   <img src="docs/screenshots/family.png" width="200" alt="Family overview" />
 </p>
 
-**Design: manga edition.** Black and white, drawn like a shōnen manga page. It has heavy panel borders with hard
-offset shadows, screentone, radial speed lines, jagged impact bursts, outlined katakana sound effects (ドン, ゴゴゴ)
-and slanted caption tabs. Today is a splash panel headed *NEXT MISSION*. Checklists are quest logs with timecode
-tags, and cleared items get a *CLEAR!* stamp. Go time is a black impact panel with a speech bubble and a burst
-counter. Family members are the *party*, each with a character card, a progress bar and a streak combo. Type is Dela
-Gothic One, which includes the Japanese glyphs, with Chakra Petch. The drawing kit is in
-`src/components/Manga.tsx`. Earlier looks are in git history: kente (`45d6d55`), 1920s broadsheet (`719242a`) and
-the Dial (`195c29d`).
+**Design: the Orrery.** An opulent, real-time 3D design, in the style of an award-winning WebGL site. Today is
+built around a live three.js scene (React Three Fiber, rendered through expo-gl on iOS and Android). A polished gold
+core glows at the centre, with armillary bands around it. Each family member orbits on their own inclined ring of
+gold, platinum, rose gold or a gemstone. Every task is a gem bead at its minute, and you tap a bead to tick it off.
+Done beads shine, the one due now pulses, and late ones glow garnet. A white spark marks now, and the Go-time diamond
+hovers above and brightens as the checklist fills. Lighting comes from a studio environment generated in code, so no
+HDR files are downloaded. The camera drifts with the pointer. Around the scene: dark glass panels with lit edges,
+staggered 3D fade-up entrances, tilt-on-press cards, a gold button with a moving sheen, drifting ambient light and a
+floating glass tab bar. Type is Cormorant Garamond with Manrope. The 3D code is in `src/components/three/`. Earlier
+looks are in git history: kente (`45d6d55`), broadsheet (`719242a`), Dial (`195c29d`) and manga (`4de31a8`).
 
 **Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single
 self-contained page with the fonts embedded. It can be hosted anywhere. When you pick the example family on the web,

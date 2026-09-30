@@ -1,12 +1,11 @@
 import {
-  ChakraPetch_400Regular,
-  ChakraPetch_500Medium,
-  ChakraPetch_500Medium_Italic,
-  ChakraPetch_600SemiBold,
-  ChakraPetch_700Bold,
-  ChakraPetch_700Bold_Italic,
-} from '@expo-google-fonts/chakra-petch';
-import { DelaGothicOne_400Regular, useFonts } from '@expo-google-fonts/dela-gothic-one';
+  CormorantGaramond_300Light_Italic,
+  CormorantGaramond_400Regular_Italic,
+  CormorantGaramond_500Medium,
+  CormorantGaramond_600SemiBold,
+  useFonts,
+} from '@expo-google-fonts/cormorant-garamond';
+import { Manrope_300Light, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold } from '@expo-google-fonts/manrope';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -55,13 +54,14 @@ function NotificationBridge() {
 function Gate({ children }: { children: React.ReactNode }) {
   const { ready } = useAkol();
   const [fontsLoaded] = useFonts({
-    DelaGothicOne_400Regular,
-    ChakraPetch_400Regular,
-    ChakraPetch_500Medium,
-    ChakraPetch_500Medium_Italic,
-    ChakraPetch_600SemiBold,
-    ChakraPetch_700Bold,
-    ChakraPetch_700Bold_Italic,
+    CormorantGaramond_300Light_Italic,
+    CormorantGaramond_400Regular_Italic,
+    CormorantGaramond_500Medium,
+    CormorantGaramond_600SemiBold,
+    Manrope_300Light,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
   });
   if (!ready || !fontsLoaded) {
     return (
@@ -77,7 +77,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AkolProvider>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <Gate>
           {/* Inside the gate so a tapped reminder can navigate once the router is mounted. */}
           <NotificationBridge />

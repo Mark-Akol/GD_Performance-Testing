@@ -2,8 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Avatar } from '../../components/Avatar';
-import { Burst, Panel } from '../../components/Manga';
+import { Avatar, ProgressRing } from '../../components/Avatar';
 import { CheckpointCard } from '../../components/Checklist';
 import { Card, Dim, Display, Eyebrow, GhostButton, Screen, SectionHeader } from '../../components/ui';
 import { dayKey, formatTime, nextUp, overdue, progress, streak, tasksForDay } from '../../lib/schedule';
@@ -22,30 +21,42 @@ export default function Family() {
 
   return (
     <Screen>
-      <Eyebrow>家族 · The household</Eyebrow>
-      <Display style={{ marginTop: 6 }}>THE PARTY</Display>
+      <Eyebrow>The household</Eyebrow>
+      <Display style={{ marginTop: 6 }}>Family</Display>
 
-      <View style={{ marginTop: space.xl }}>
-        <Panel lines={{ x: 0.15, y: 0.5, clear: 0.18, count: 70 }} style={styles.summary}>
-          <Burst size={112} spikes={18} seed={4}>
+      <Card glow style={{ marginTop: space.xl }}>
+        <View style={styles.summary}>
+          <View style={{ width: 112, height: 112, alignItems: 'center', justifyContent: 'center' }}>
+            {state.members.map((m, i) => {
+              const size = 112 - i * 18;
+              const ratio = progress(
+                all.filter((t) => t.memberId === m.id),
+                state.completions,
+                today,
+              ).ratio;
+              return (
+                <View key={m.id} style={{ position: 'absolute', width: size, height: size }}>
+                  <ProgressRing size={size} stroke={4} ratio={ratio} color={jewels[m.color].hex} />
+                </View>
+              );
+            })}
             <Text style={styles.pct}>{Math.round(household.ratio * 100)}%</Text>
-            <Text style={styles.pctLabel}>SYNC</Text>
-          </Burst>
-          <View style={styles.summaryText}>
+          </View>
+          <View style={{ flex: 1, gap: 4 }}>
             <Text style={styles.summaryTitle}>
               {household.total === 0
-                ? 'Free day!'
+                ? 'A free day'
                 : household.done === household.total
-                  ? 'Party ready!'
-                  : `${household.total - household.done} quests left`}
+                  ? 'Everyone is ready'
+                  : `${household.total - household.done} left to do`}
             </Text>
             <Dim>
-              {household.done} of {household.total} cleared across {state.members.length}{' '}
-              {state.members.length === 1 ? 'member' : 'members'} today.
+              {household.done} of {household.total} items checked off across {state.members.length}{' '}
+              {state.members.length === 1 ? 'person' : 'people'} today.
             </Dim>
           </View>
-        </Panel>
-      </View>
+        </View>
+      </Card>
 
       <SectionHeader title="Members" />
       <View style={{ gap: space.md }}>
@@ -107,10 +118,8 @@ export default function Family() {
 }
 
 const styles = StyleSheet.create({
-  summary: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md },
-  summaryText: { flex: 1, gap: 4, backgroundColor: colors.bg, padding: space.sm },
-  pct: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, color: colors.ink, ...lining },
-  pctLabel: { fontFamily: fonts.semibold, fontSize: 9, letterSpacing: 2, color: colors.ink },
+  summary: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  pct: { fontFamily: fonts.display, fontSize: 24, color: colors.ink, ...lining },
   summaryTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text, ...lining },
   memberCard: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },

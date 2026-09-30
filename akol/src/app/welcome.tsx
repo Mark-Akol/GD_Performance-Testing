@@ -1,18 +1,43 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { Burst, CaptionTab, Panel, SFX, SpeedLines } from '../components/Manga';
-import { Field, GhostButton, InkButton, Screen } from '../components/ui';
+import { jewelFor } from '../components/Avatar';
+import { Fleuron } from '../components/Rules';
+import { Orrery, type OrbitRing } from '../components/three/Orrery';
+import { Card, FadeIn, Field, GhostButton, InkButton, Screen } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
+import { parseTime } from '../lib/schedule';
 import { exampleFamily, freshFamily } from '../lib/seed';
 import { useAkol } from '../lib/store';
-import { colors, fonts, SLANT, space, stroke } from '../theme';
+import { colors, fonts, space } from '../theme';
 
-/** First run, drawn as the cover of volume one. */
+/** First run: the orrery turning in the dark, the name in gold, and one question. */
 export default function Welcome() {
   const { dispatch } = useAkol();
   const [name, setName] = useState('');
+
+  // A frozen school morning at 6:48 a.m. to show the orrery in use.
+  const preview = useMemo(() => {
+    const s = exampleFamily();
+    const school = s.tasks.filter((t) => t.routineId === 'r_school');
+    const mins = school.map((t) => parseTime(t.time));
+    const from = Math.min(...mins) - 10;
+    const to = Math.max(...mins) + 10;
+    const done = new Set(['t_mk_coffee', 't_ra_up', 't_ra_teeth', 't_mk_breakfast', 't_ra_dress']);
+    const rings: OrbitRing[] = s.members.map((m) => {
+      const j = jewelFor(m, m.id);
+      return {
+        id: m.id,
+        hex: j.hex,
+        metal: j.metal,
+        beads: school
+          .filter((t) => t.memberId === m.id && !t.checkpoint)
+          .map((t) => ({ id: t.id, frac: (parseTime(t.time) - from) / (to - from), done: done.has(t.id), due: t.id === 't_ra_lunch' })),
+      };
+    });
+    return { rings, nowFrac: (6 * 60 + 48 - from) / (to - from) };
+  }, []);
 
   const start = async (example: boolean) => {
     const parent = name.trim() || 'Mark';
@@ -29,123 +54,87 @@ export default function Welcome() {
 
   return (
     <Screen contentStyle={{ paddingBottom: 60 }}>
-      {/* Cover */}
-      <View style={styles.cover}>
-        <SpeedLines focus={{ x: 0.5, y: 0.42 }} clear={0.3} count={96} seed={21} />
-        <View style={styles.coverTop}>
-          <CaptionTab>Vol. 1</CaptionTab>
-          <Text style={styles.coverSmall}>THE FAMILY, ON TIME</Text>
+      <FadeIn style={styles.stage}>
+        <Orrery rings={preview.rings} nowFrac={preview.nowFrac} checkpointRatio={5 / 11} height={440} autoOrbit={0.12} />
+        <View style={styles.titleBlock} pointerEvents="none">
+          <Text style={styles.word}>Akol</Text>
+          <Text style={styles.tag}>The family, on time</Text>
         </View>
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>AKOL</Text>
-          <View style={styles.titleRule} />
-          <Text style={styles.subtitle}>アコル</Text>
-        </View>
-        <View style={styles.kanaColumn}>
-          {'時間通り'.split('').map((c, i) => (
-            <Text key={i} style={styles.kana}>
-              {c}
-            </Text>
-          ))}
-        </View>
-        <Burst size={116} spikes={18} seed={2} style={styles.newBurst}>
-          <Text style={styles.newText}>NEW{'\n'}SERIES!</Text>
-        </Burst>
-        <SFX text="ドドド" size={42} rotate={-10} style={styles.coverSfx} />
-      </View>
+      </FadeIn>
 
-      {/* Three panels */}
-      <View style={{ marginTop: space.xl, gap: space.md }}>
-        <Panel tilt={-1} tone={0.18}>
-          <View style={styles.panelTextBox}>
-            <Text style={styles.panelHead}>A quest log for every member!</Text>
-            <Text style={styles.panelBody}>Your list, the kids’ lists, and the whole party at a glance.</Text>
-          </View>
-        </Panel>
-        <View style={{ flexDirection: 'row', gap: space.md }}>
-          <View style={{ flex: 1 }}>
-            <Panel tilt={1.2} lines={{ x: 0.5, y: 0.5, clear: 0.34, count: 40 }} style={{ minHeight: 150 }}>
-              <View style={styles.panelTextBox}>
-                <Text style={styles.panelHead}>To the minute</Text>
-                <Text style={styles.panelBody}>6:45 lunch. 6:55 bags. 7:00 GPS.</Text>
-              </View>
-            </Panel>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Panel tilt={-0.8} inverted style={{ minHeight: 150 }}>
-              <Text style={[styles.panelHead, { color: colors.bg }]}>GO TIME!!</Text>
-              <Text style={[styles.panelBody, { color: colors.bg }]}>Akol asks if every quest is cleared, and names what isn’t.</Text>
-            </Panel>
-          </View>
-        </View>
-      </View>
+      <FadeIn delay={300}>
+        <Text style={styles.lede}>
+          Each person in your family is an orbit of gold, platinum or rose. Each task is a gem at its minute. At go time
+          the diamond asks if everything is done.
+        </Text>
+      </FadeIn>
 
-      <View style={{ marginTop: space.xxl }}>
-        <Field label="Your hero name" value={name} onChangeText={setName} placeholder="MARK" returnKeyType="done" />
-      </View>
       <View style={{ gap: space.md, marginTop: space.xl }}>
-        <InkButton label="Start the story ▶" onPress={() => start(true)} />
-        <GhostButton label="Blank page" onPress={() => start(false)} />
+        {[
+          ['A checklist for everyone', 'Your list, your children’s lists, and the whole family at a glance.'],
+          ['Reminders to the minute', '6:45 pack lunch. 6:55 bags in the car. 7:00 tune the GPS.'],
+          ['Go time', 'Akol asks whether everything is done, and shows exactly what isn’t.'],
+        ].map(([h, b], i) => (
+          <FadeIn key={h} delay={420 + i * 110}>
+            <Card>
+              <View style={styles.feature}>
+                <Text style={styles.featureNum}>{['i', 'ii', 'iii'][i]}</Text>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={styles.featureHead}>{h}</Text>
+                  <Text style={styles.featureBody}>{b}</Text>
+                </View>
+              </View>
+            </Card>
+          </FadeIn>
+        ))}
       </View>
-      <Text style={styles.fine}>Private by design. Everything stays on this device.</Text>
+
+      <Fleuron style={{ marginVertical: space.xl }} />
+
+      <FadeIn delay={800}>
+        <Field label="Your name" value={name} onChangeText={setName} placeholder="Mark" returnKeyType="done" />
+        <View style={{ gap: space.md, marginTop: space.xl }}>
+          <InkButton label="Begin with the example family" onPress={() => start(true)} />
+          <GhostButton label="Start from a blank page" onPress={() => start(false)} />
+        </View>
+        <Text style={styles.fine}>Private by design. Everything stays on this device.</Text>
+      </FadeIn>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  cover: {
-    height: 420,
-    borderWidth: stroke.heavy,
-    borderColor: colors.ink,
-    overflow: 'hidden',
-    backgroundColor: colors.bg,
-    padding: space.lg,
+  stage: { marginHorizontal: -18, marginTop: -space.lg },
+  titleBlock: { position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center' },
+  word: {
+    fontFamily: fonts.masthead,
+    fontSize: 112,
+    lineHeight: 118,
+    color: colors.inkSoft,
+    letterSpacing: -2,
+    textShadowColor: 'rgba(232,199,138,0.55)',
+    textShadowRadius: 30,
+    textShadowOffset: { width: 0, height: 0 },
   },
-  coverTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  coverSmall: {
-    fontFamily: fonts.display,
-    fontSize: 10,
-    letterSpacing: 1.5,
+  tag: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    letterSpacing: 5,
+    textTransform: 'uppercase',
     color: colors.ink,
-    backgroundColor: colors.bg,
-    paddingHorizontal: 4,
+    marginTop: -4,
   },
-  titleBlock: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title: {
-    fontFamily: fonts.display,
-    fontSize: 92,
-    lineHeight: 108,
-    color: colors.ink,
-    backgroundColor: colors.bg,
-    paddingHorizontal: 10,
-    transform: [{ skewX: SLANT }],
-  },
-  titleRule: { width: 180, height: stroke.heavy, backgroundColor: colors.ink, marginTop: 2 },
-  subtitle: {
-    fontFamily: fonts.display,
+  lede: {
+    fontFamily: fonts.italic,
     fontSize: 22,
-    letterSpacing: 10,
-    color: colors.bg,
-    backgroundColor: colors.ink,
-    paddingHorizontal: 12,
-    paddingVertical: 2,
-    marginTop: space.sm,
+    lineHeight: 30,
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: space.xl,
   },
-  kanaColumn: {
-    position: 'absolute',
-    left: 14,
-    top: 64,
-    backgroundColor: colors.ink,
-    paddingHorizontal: 5,
-    paddingVertical: 8,
-    gap: 2,
-  },
-  kana: { fontFamily: fonts.display, fontSize: 18, lineHeight: 22, color: colors.bg, textAlign: 'center' },
-  newBurst: { position: 'absolute', right: 4, top: 44 },
-  newText: { fontFamily: fonts.display, fontSize: 11, lineHeight: 13, color: colors.ink, textAlign: 'center' },
-  coverSfx: { position: 'absolute', left: 18, bottom: 16 },
-  panelTextBox: { backgroundColor: colors.bg, alignSelf: 'flex-start', padding: 6 },
-  panelHead: { fontFamily: fonts.display, fontSize: 17, lineHeight: 22, color: colors.ink, textTransform: 'uppercase' },
-  panelBody: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 19, color: colors.ink, marginTop: 4 },
-  fine: { fontFamily: fonts.medium, textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint },
+  feature: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
+  featureNum: { fontFamily: fonts.italic, fontSize: 22, color: colors.ink, width: 26 },
+  featureHead: { fontFamily: fonts.display, fontSize: 22, color: colors.text },
+  featureBody: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textDim },
+  fine: { fontFamily: fonts.light, textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint },
 });
