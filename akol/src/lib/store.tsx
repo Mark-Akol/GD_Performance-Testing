@@ -13,7 +13,8 @@ import {
 import { AppState } from 'react-native';
 
 import { syncReminders } from './notifications';
-import { FAMILY_ID, dayKey, pruneCompletions } from './schedule';
+import { JEWEL_KEYS, LEGACY_JEWELS } from '../theme';
+import { FAMILY_ID, atTime, dayKey, pruneCompletions } from './schedule';
 import { emptyState } from './seed';
 import type { AkolState, DayKey, Member, Routine, Settings, Task } from './types';
 
@@ -99,7 +100,12 @@ function migrate(raw: unknown): AkolState {
   const s = raw as Partial<AkolState>;
   return {
     version: 1,
-    members: Array.isArray(s.members) ? s.members : [],
+    members: Array.isArray(s.members)
+      ? s.members.map((m) => ({
+          ...m,
+          color: JEWEL_KEYS.includes(m.color) ? m.color : (LEGACY_JEWELS[m.color] ?? 'sika'),
+        }))
+      : [],
     routines: Array.isArray(s.routines) ? s.routines : [],
     tasks: Array.isArray(s.tasks) ? s.tasks : [],
     completions: s.completions && typeof s.completions === 'object' ? s.completions : {},
@@ -194,9 +200,20 @@ export function useAkol(): Store {
   return v;
 }
 
-/** Current time, re-rendering on each minute boundary (and every 15 s for countdowns). */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The app's idea of "now": real time, or the demo clock when one is set. */
+export function appNow(settings: Settings, real = new Date()): Date {
+  const demo = settings.demoClock;
+  if (!demo) return real;
+  const elapsed = Math.max(0, real.getTime() - demo.setAt) % DAY_MS;
+  return new Date(atTime(real, demo.time).getTime() + elapsed);
+}
+
+/** Current time, refreshed every 15 s for countdowns. Honours the demo clock. */
 export function useNow(intervalMs = 15000): Date {
-  const [now, setNow] = useState(() => new Date());
+  const settings = useContext(Ctx)?.state.settings;
+  const [real, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), intervalMs);
     const sub = AppState.addEventListener('change', (s) => s === 'active' && setNow(new Date()));
@@ -205,7 +222,7 @@ export function useNow(intervalMs = 15000): Date {
       sub.remove();
     };
   }, [intervalMs]);
-  return now;
+  return settings ? appNow(settings, real) : real;
 }
 
 export { FAMILY_ID };

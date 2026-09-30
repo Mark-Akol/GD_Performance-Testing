@@ -17,6 +17,7 @@ import {
   notificationsSupported,
   type ReminderData,
 } from '../lib/notifications';
+import { ConfirmHost } from '../components/ui';
 import { AkolProvider, useAkol } from '../lib/store';
 import { colors } from '../theme';
 
@@ -90,6 +91,7 @@ export default function RootLayout() {
             <Stack.Screen name="task" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             <Stack.Screen name="member-edit" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           </Stack>
+          <ConfirmHost />
         </Gate>
       </AkolProvider>
     </SafeAreaProvider>

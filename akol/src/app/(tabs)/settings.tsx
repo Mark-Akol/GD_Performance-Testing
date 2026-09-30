@@ -24,7 +24,7 @@ import {
   sendTestReminder,
   syncReminders,
 } from '../../lib/notifications';
-import { dayKey, planReminders } from '../../lib/schedule';
+import { dayKey, formatTime, planReminders } from '../../lib/schedule';
 import { emptyState, exampleFamily } from '../../lib/seed';
 import { useAkol } from '../../lib/store';
 import { colors, fonts, jewels, space } from '../../theme';
@@ -154,6 +154,22 @@ export default function Settings() {
             />
           </>
         )}
+      </Card>
+
+      <SectionHeader title="Showing Akol to someone" />
+      <Card>
+        <ToggleRow
+          label="Demo clock"
+          hint={
+            settings.demoClock
+              ? `Akol is running as if the day started at ${formatTime(settings.demoClock.time)}. Reminders still use real time.`
+              : 'Run the day from 6:48am so the school-morning routine is live.'
+          }
+          value={!!settings.demoClock}
+          onChange={(on) =>
+            dispatch({ type: 'settings', patch: { demoClock: on ? { time: '06:48', setAt: Date.now() } : null } })
+          }
+        />
       </Card>
 
       <SectionHeader title="Your data" />

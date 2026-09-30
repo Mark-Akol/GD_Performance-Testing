@@ -17,8 +17,15 @@ shows everyone's open items.
   <img src="docs/screenshots/today.png" width="200" alt="Today" />
   <img src="docs/screenshots/go-time.png" width="200" alt="Go time checkpoint" />
   <img src="docs/screenshots/family.png" width="200" alt="Family overview" />
-  <img src="docs/screenshots/edit-reminder.png" width="200" alt="Edit a reminder" />
 </p>
+
+**Design:** ebony and sika gold, with kente-cloth bands and a sunset glow. Each family member gets a kente colour
+(Sika Gold, Kente Green, Maasai Red, Adire Indigo, Terracotta, Malachite).
+
+**Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single
+self-contained page with the fonts embedded. It can be hosted anywhere. When you pick the example family on the web,
+Akol turns on a *demo clock* (6:48am on weekdays), so the morning routine is live whatever the time. Turn it off in
+Settings or by tapping the pill on Today.
 
 ## Tech (chosen to keep costs low for a solo founder)
 

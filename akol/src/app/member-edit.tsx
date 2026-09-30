@@ -39,7 +39,7 @@ export default function MemberEditor() {
         id: uid('m_'),
         name: '',
         role: 'child',
-        color: JEWEL_KEYS.find((k) => !state.members.some((m) => m.color === k)) ?? 'emerald',
+        color: JEWEL_KEYS.find((k) => !state.members.some((m) => m.color === k)) ?? 'kente',
         emoji: EMOJI[(state.members.length + 1) % EMOJI.length],
       },
   );

@@ -39,7 +39,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "prototype": "node scripts/build-prototype.mjs"
   },
   "private": true
 }

@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar, jewelFor } from '../../components/Avatar';
+import { KenteBand } from '../../components/Kente';
 import { Timeline } from '../../components/Checklist';
 import { Card, Dim, Display, Eyebrow, GoldButton, Screen, SectionHeader, Segmented } from '../../components/ui';
 import {
@@ -26,7 +27,7 @@ import { colors, fonts, gradients, lining, radius, space } from '../../theme';
 type Scope = 'mine' | 'family';
 
 export default function Today() {
-  const { state, me, member, routine } = useAkol();
+  const { state, me, member, routine, dispatch } = useAkol();
   const now = useNow();
   const [scope, setScope] = useState<Scope>('mine');
   const today = dayKey(now);
@@ -57,6 +58,18 @@ export default function Today() {
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Eyebrow>{dateLine}</Eyebrow>
+          {state.settings.demoClock && (
+            <Pressable
+              onPress={() => dispatch({ type: 'settings', patch: { demoClock: null } })}
+              style={styles.demo}
+              accessibilityRole="button"
+            >
+              <Ionicons name="time-outline" size={12} color={colors.gold} />
+              <Text style={styles.demoText}>
+                Demo clock {formatTime(`${now.getHours()}:${now.getMinutes()}`)} · tap for real time
+              </Text>
+            </Pressable>
+          )}
           <Display style={{ marginTop: 6 }}>
             {greeting(now)},{'\n'}
             <Text style={styles.name}>{me?.name ?? 'there'}</Text>
@@ -160,7 +173,9 @@ function HeroCard({
   return (
     <View style={styles.heroWrap}>
       <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroBorder}>
-        <LinearGradient colors={['#1A1F3A', '#0C0F1F']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+        <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroInner}>
+          <KenteBand height={8} repeats={5} />
+          <View style={styles.hero}>
           <View style={styles.heroTop}>
             <Eyebrow>{allDone ? 'All complete' : next ? (next.status === 'due' ? 'Due now' : 'Next up') : 'Today'}</Eyebrow>
             <Text style={styles.heroProgress}>
@@ -206,6 +221,7 @@ function HeroCard({
               {lateCount} item{lateCount === 1 ? '' : 's'} overdue
             </Text>
           )}
+          </View>
         </LinearGradient>
       </LinearGradient>
     </View>
@@ -215,6 +231,20 @@ function HeroCard({
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   name: { fontFamily: fonts.displayItalic, color: colors.gold },
+  demo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    marginTop: space.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.hairlineStrong,
+    backgroundColor: 'rgba(242,182,50,0.08)',
+  },
+  demoText: { fontFamily: fonts.medium, fontSize: 11, color: colors.goldPale },
   strip: { gap: space.lg, paddingVertical: space.lg, paddingRight: space.lg },
   stripItem: { alignItems: 'center', width: 60, gap: 4 },
   stripName: { fontFamily: fonts.medium, fontSize: 12, color: colors.ivory },
@@ -238,7 +268,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   heroBorder: { borderRadius: radius.lg + 1, padding: 1 },
-  hero: { borderRadius: radius.lg, padding: space.xl, gap: space.sm },
+  heroInner: { borderRadius: radius.lg, overflow: 'hidden' },
+  hero: { padding: space.xl, gap: space.sm },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroProgress: { fontFamily: fonts.displayMedium, fontSize: 15, color: colors.textDim, ...lining },
   heroTitle: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, color: colors.ivory, marginTop: 4 },

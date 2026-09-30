@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
-  Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fonts, gradients, radius, space } from '../theme';
+import { KenteBand, Lozenge } from './Kente';
 
 export function tap(kind: 'light' | 'medium' | 'success' = 'light') {
   if (Platform.OS === 'web') return;
@@ -30,7 +31,7 @@ export function tap(kind: 'light' | 'medium' | 'success' = 'light') {
     ).catch(() => {});
 }
 
-/** Full-bleed midnight backdrop with a soft gilt glow at the top. */
+/** Full-bleed ebony backdrop: a kente band at the top edge and a sunset glow beneath it. */
 export function Screen({
   children,
   scroll = true,
@@ -42,7 +43,7 @@ export function Screen({
 }) {
   const insets = useSafeAreaInsets();
   const pad: ViewStyle = {
-    paddingTop: insets.top + space.lg,
+    paddingTop: insets.top + space.xl,
     paddingBottom: insets.bottom + 110,
     paddingHorizontal: space.lg,
     width: '100%',
@@ -53,7 +54,7 @@ export function Screen({
     <View style={styles.fill}>
       <LinearGradient colors={gradients.page} style={StyleSheet.absoluteFill} />
       <LinearGradient
-        colors={['rgba(46,58,128,0.42)', 'rgba(233,196,106,0.035)', 'rgba(7,8,15,0)']}
+        colors={gradients.glow}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={styles.glow}
@@ -66,6 +67,7 @@ export function Screen({
       ) : (
         <View style={[styles.fill, pad, contentStyle]}>{children}</View>
       )}
+      <KenteBand height={6} repeats={10} style={[styles.topBand, { top: 0, height: insets.top + 6, justifyContent: 'flex-end' }]} />
     </View>
   );
 }
@@ -246,7 +248,7 @@ export function SectionHeader({ title, right }: { title: string; right?: ReactNo
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.row}>
-        <View style={styles.diamond} />
+        <Lozenge size={7} />
         <Eyebrow>{title}</Eyebrow>
       </View>
       {right}
@@ -257,7 +259,7 @@ export function SectionHeader({ title, right }: { title: string; right?: ReactNo
 export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
   return (
     <LinearGradient
-      colors={['rgba(233,196,106,0)', 'rgba(233,196,106,0.35)', 'rgba(233,196,106,0)']}
+      colors={['rgba(242,182,50,0)', 'rgba(242,182,50,0.4)', 'rgba(242,182,50,0)']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 0 }}
       style={[{ height: StyleSheet.hairlineWidth * 2, marginVertical: space.lg }, style]}
@@ -265,16 +267,61 @@ export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
   );
 }
 
-/** Cross-platform confirm (Alert.alert is a no-op on web). */
-export function confirm(title: string, message: string, destructiveLabel: string, onConfirm: () => void) {
-  if (Platform.OS === 'web') {
-    if (globalThis.confirm?.(`${title}\n\n${message}`)) onConfirm();
-    return;
-  }
-  Alert.alert(title, message, [
-    { text: 'Cancel', style: 'cancel' },
-    { text: destructiveLabel, style: 'destructive', onPress: onConfirm },
-  ]);
+interface ConfirmRequest {
+  title: string;
+  message: string;
+  actionLabel: string;
+  onConfirm: () => void;
+}
+
+let showConfirm: ((r: ConfirmRequest | null) => void) | null = null;
+
+/**
+ * Ask before a destructive action, in Akol's own dialog. Browser dialogs are blocked
+ * in some web embeds, and this looks the same on every platform.
+ */
+export function confirm(title: string, message: string, actionLabel: string, onConfirm: () => void) {
+  if (showConfirm) showConfirm({ title, message, actionLabel, onConfirm });
+  else onConfirm();
+}
+
+/** Render once near the root. */
+export function ConfirmHost() {
+  const [req, setReq] = useState<ConfirmRequest | null>(null);
+  useEffect(() => {
+    showConfirm = setReq;
+    return () => {
+      showConfirm = null;
+    };
+  }, []);
+  const close = () => setReq(null);
+  return (
+    <Modal visible={!!req} transparent animationType="fade" onRequestClose={close}>
+      <Pressable style={styles.scrim} onPress={close}>
+        <Pressable style={styles.dialog} onPress={() => {}}>
+          <KenteBand height={6} repeats={4} />
+          <View style={styles.dialogBody}>
+            <Lozenge size={10} />
+            <Text style={styles.dialogTitle}>{req?.title}</Text>
+            <Dim style={{ textAlign: 'center' }}>{req?.message}</Dim>
+            <View style={styles.dialogActions}>
+              <GhostButton label="Cancel" tone="plain" onPress={close} style={{ flex: 1 }} />
+              <GhostButton
+                label={req?.actionLabel ?? 'OK'}
+                tone="danger"
+                onPress={() => {
+                  const r = req;
+                  close();
+                  r?.onConfirm();
+                }}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
 }
 
 export function Field({ label, style, ...props }: TextInputProps & { label: string }) {
@@ -338,7 +385,21 @@ export const styles = StyleSheet.create({
   },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
   fill: { flex: 1, backgroundColor: colors.bg },
-  glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 320 },
+  glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 380 },
+  topBand: { position: 'absolute', left: 0, right: 0, backgroundColor: colors.bg },
+  scrim: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: space.xl },
+  dialog: {
+    width: '100%',
+    maxWidth: 380,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.bgRaised,
+    borderWidth: 1,
+    borderColor: colors.hairlineStrong,
+  },
+  dialogBody: { padding: space.xl, alignItems: 'center', gap: space.md },
+  dialogTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.ivory, textAlign: 'center' },
+  dialogActions: { flexDirection: 'row', gap: space.md, marginTop: space.sm, alignSelf: 'stretch' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   display: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, color: colors.ivory, letterSpacing: 0.2, fontVariant: ['lining-nums'] },
   title: { fontFamily: fonts.displayMedium, fontSize: 21, lineHeight: 27, color: colors.ivory },
@@ -415,5 +476,4 @@ export const styles = StyleSheet.create({
     marginTop: space.xl,
     marginBottom: space.md,
   },
-  diamond: { width: 6, height: 6, backgroundColor: colors.gold, transform: [{ rotate: '45deg' }] },
 });

@@ -17,6 +17,7 @@ import { useAkol } from '../lib/store';
 import type { DayKey, Task } from '../lib/types';
 import { colors, fonts, gradients, lining, radius, space } from '../theme';
 import { Avatar, jewelFor } from './Avatar';
+import { KenteBand } from './Kente';
 import { Body, Card, Dim, Eyebrow, tap } from './ui';
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -137,8 +138,9 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
   const until = isToday ? relative(atTime(now, task.time), now) : '';
 
   return (
-    <Card glow style={{ marginVertical: space.sm }}>
+    <Card glow style={{ marginVertical: space.sm, paddingTop: space.lg + 8 }}>
       <LinearGradient colors={gradients.goldSoft} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} />
+      <KenteBand height={8} repeats={5} style={{ position: 'absolute', top: 0, left: 0, right: 0 }} />
       <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}>
         <View style={[s.meta, { justifyContent: 'space-between' }]}>
           <Eyebrow>Checkpoint · {formatTime(task.time)}</Eyebrow>

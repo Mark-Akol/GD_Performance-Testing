@@ -3,6 +3,7 @@ import { BlurView } from 'expo-blur';
 import { Redirect, Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 
+import { KenteBand } from '../../components/Kente';
 import { useAkol } from '../../lib/store';
 import { colors, fonts } from '../../theme';
 
@@ -28,16 +29,20 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase' },
         tabBarStyle: {
           position: 'absolute',
-          borderTopColor: colors.hairline,
-          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(7,8,15,0.96)',
+          borderTopWidth: 0,
+          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(14,9,7,0.97)',
           elevation: 0,
         },
-        tabBarBackground: () =>
-          Platform.OS === 'ios' ? (
-            <BlurView tint="dark" intensity={60} style={StyleSheet.absoluteFill} />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(7,8,15,0.96)' }]} />
-          ),
+        tabBarBackground: () => (
+          <View style={StyleSheet.absoluteFill}>
+            {Platform.OS === 'ios' ? (
+              <BlurView tint="dark" intensity={60} style={StyleSheet.absoluteFill} />
+            ) : (
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(14,9,7,0.97)' }]} />
+            )}
+            <KenteBand height={4} repeats={8} />
+          </View>
+        ),
       }}
     >
       {TABS.map((t) => (

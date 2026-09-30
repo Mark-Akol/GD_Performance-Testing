@@ -19,7 +19,7 @@ export interface Member {
   emoji?: string;
 }
 
-export type JewelKey = 'emerald' | 'sapphire' | 'ruby' | 'amethyst' | 'topaz' | 'pearl';
+export type JewelKey = 'sika' | 'kente' | 'maasai' | 'adire' | 'terracotta' | 'malachite';
 
 export interface Routine {
   id: string;
@@ -58,6 +58,11 @@ export interface Settings {
   /** Skip a reminder if the task is already checked off. */
   smartSkip: boolean;
   onboarded: boolean;
+  /**
+   * Demo clock for showing the app off: the day runs as if it were `time` when the
+   * clock was set at `setAt`. Reminders always use the real time.
+   */
+  demoClock?: { time: ClockTime; setAt: number } | null;
 }
 
 export interface AkolState {

@@ -8,8 +8,8 @@ import type { Member } from '../lib/types';
 import { colors, familyJewel, fonts, jewels } from '../theme';
 
 export function jewelFor(member: Member | undefined | null, memberId?: string) {
-  if (!member) return memberId === FAMILY_ID ? familyJewel : jewels.pearl;
-  return jewels[member.color] ?? jewels.pearl;
+  if (!member) return memberId === FAMILY_ID ? familyJewel : jewels.malachite;
+  return jewels[member.color] ?? jewels.malachite;
 }
 
 export function ProgressRing({

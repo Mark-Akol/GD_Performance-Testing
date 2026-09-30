@@ -1,8 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
+import { KenteBand, Lozenge } from '../components/Kente';
 import { Dim, Divider, Field, GhostButton, GoldButton, Screen } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
 import { exampleFamily, freshFamily } from '../lib/seed';
@@ -15,7 +16,13 @@ export default function Welcome() {
 
   const start = async (example: boolean) => {
     const parent = name.trim() || 'Mark';
-    dispatch({ type: 'replace', state: example ? exampleFamily(parent) : freshFamily(parent) });
+    const state = example ? exampleFamily(parent) : freshFamily(parent);
+    if (example && Platform.OS === 'web') {
+      // The web prototype opens mid-routine so the reminders and Go time are in play.
+      const weekend = [0, 6].includes(new Date().getDay());
+      state.settings.demoClock = { time: weekend ? '08:40' : '06:48', setAt: Date.now() };
+    }
+    dispatch({ type: 'replace', state });
     await requestNotificationPermission().catch(() => false);
     router.replace(example ? '/' : '/routines');
   };
@@ -23,11 +30,20 @@ export default function Welcome() {
   return (
     <Screen contentStyle={{ paddingBottom: 60 }}>
       <View style={styles.hero}>
-        <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.crest}>
-          <Text style={styles.crestText}>A</Text>
-        </LinearGradient>
+        <View style={styles.crestFrame}>
+          <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.crest}>
+            <View style={styles.crestInner}>
+              <Text style={styles.crestText}>A</Text>
+            </View>
+          </LinearGradient>
+        </View>
         <Text style={styles.word}>AKOL</Text>
-        <Text style={styles.tag}>The family, on time.</Text>
+        <View style={styles.tagRow}>
+          <Lozenge size={6} />
+          <Text style={styles.tag}>The family, on time.</Text>
+          <Lozenge size={6} />
+        </View>
+        <KenteBand height={10} repeats={4} style={styles.heroBand} />
       </View>
 
       <Divider />
@@ -63,22 +79,32 @@ function Feature({ icon, title, body }: { icon: string; title: string; body: str
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: 'center', marginTop: space.xxl },
-  crest: {
-    width: 96,
-    height: 96,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
+  hero: { alignItems: 'center', marginTop: space.xxl + space.lg },
+  crestFrame: {
+    padding: 6,
+    borderRadius: 34,
+    borderWidth: 1,
+    borderColor: colors.hairlineStrong,
     transform: [{ rotate: '45deg' }],
-    shadowColor: colors.gold,
-    shadowOpacity: 0.5,
-    shadowRadius: 30,
+    shadowColor: '#E0661F',
+    shadowOpacity: 0.55,
+    shadowRadius: 36,
     elevation: 12,
   },
-  crestText: { fontFamily: fonts.display, fontSize: 46, color: colors.bg, transform: [{ rotate: '-45deg' }] },
+  crest: { width: 96, height: 96, borderRadius: 28, padding: 8 },
+  crestInner: {
+    flex: 1,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(14,9,7,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crestText: { fontFamily: fonts.display, fontSize: 42, color: colors.bg, transform: [{ rotate: '-45deg' }] },
+  tagRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.sm },
+  heroBand: { marginTop: space.xl, width: 200, borderRadius: 2 },
   word: { fontFamily: fonts.display, fontSize: 44, letterSpacing: 14, color: colors.ivory, marginTop: space.xxl, paddingLeft: 14 },
-  tag: { fontFamily: fonts.displayItalic, fontSize: 18, color: colors.gold, marginTop: space.sm },
+  tag: { fontFamily: fonts.displayItalic, fontSize: 18, color: colors.gold },
   feature: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
   featureIcon: { fontSize: 20, color: colors.gold, width: 26, textAlign: 'center', marginTop: 2 },
   featureTitle: { fontFamily: fonts.displayMedium, fontSize: 18, color: colors.ivory },
