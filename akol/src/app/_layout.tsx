@@ -1,11 +1,12 @@
 import {
-  BodoniModa_400Regular,
-  BodoniModa_400Regular_Italic,
-  BodoniModa_500Medium,
-  BodoniModa_700Bold,
-  useFonts,
-} from '@expo-google-fonts/bodoni-moda';
-import { Jost_300Light, Jost_400Regular, Jost_500Medium, Jost_600SemiBold } from '@expo-google-fonts/jost';
+  ChakraPetch_400Regular,
+  ChakraPetch_500Medium,
+  ChakraPetch_500Medium_Italic,
+  ChakraPetch_600SemiBold,
+  ChakraPetch_700Bold,
+  ChakraPetch_700Bold_Italic,
+} from '@expo-google-fonts/chakra-petch';
+import { DelaGothicOne_400Regular, useFonts } from '@expo-google-fonts/dela-gothic-one';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -54,14 +55,13 @@ function NotificationBridge() {
 function Gate({ children }: { children: React.ReactNode }) {
   const { ready } = useAkol();
   const [fontsLoaded] = useFonts({
-    BodoniModa_400Regular,
-    BodoniModa_400Regular_Italic,
-    BodoniModa_500Medium,
-    BodoniModa_700Bold,
-    Jost_300Light,
-    Jost_400Regular,
-    Jost_500Medium,
-    Jost_600SemiBold,
+    DelaGothicOne_400Regular,
+    ChakraPetch_400Regular,
+    ChakraPetch_500Medium,
+    ChakraPetch_500Medium_Italic,
+    ChakraPetch_600SemiBold,
+    ChakraPetch_700Bold,
+    ChakraPetch_700Bold_Italic,
   });
   if (!ready || !fontsLoaded) {
     return (

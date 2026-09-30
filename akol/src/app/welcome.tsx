@@ -1,41 +1,20 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { Dial } from '../components/Dial';
-import { tap } from '../components/ui';
+import { Burst, CaptionTab, Panel, SFX, SpeedLines } from '../components/Manga';
+import { Field, GhostButton, InkButton, Screen } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
-import { dayKey } from '../lib/schedule';
 import { exampleFamily, freshFamily } from '../lib/seed';
 import { useAkol } from '../lib/store';
-import { colors, fonts, radius, space } from '../theme';
+import { colors, fonts, SLANT, space, stroke } from '../theme';
 
-/** First run: a black page, the Dial turning in white, and one question. */
+/** First run, drawn as the cover of volume one. */
 export default function Welcome() {
   const { dispatch } = useAkol();
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const [name, setName] = useState('');
 
-  // A frozen school morning at 6:48 a.m. to show what the Dial looks like in use.
-  const preview = useMemo(() => {
-    const s = exampleFamily();
-    const at = new Date();
-    at.setHours(6, 48, 0, 0);
-    const day = dayKey(at);
-    const done = ['t_mk_coffee', 't_ra_up', 't_ra_teeth', 't_mk_breakfast', 't_ra_dress'];
-    return {
-      tasks: s.tasks.filter((t) => t.routineId === 'r_school'),
-      members: s.members,
-      completions: { [day]: Object.fromEntries(done.map((id) => [id, 1])) },
-      day,
-      at,
-    };
-  }, []);
-
   const start = async (example: boolean) => {
-    tap('medium');
     const parent = name.trim() || 'Mark';
     const state = example ? exampleFamily(parent) : freshFamily(parent);
     if (example && Platform.OS === 'web') {
@@ -48,142 +27,125 @@ export default function Welcome() {
     router.replace(example ? '/' : '/routines');
   };
 
-  const dial = Math.min(width - 48, 340);
-
   return (
-    <View style={styles.page}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + 48 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.topRow}>
-          <Text style={styles.small}>No. 01</Text>
-          <Text style={styles.small}>The family, on time</Text>
+    <Screen contentStyle={{ paddingBottom: 60 }}>
+      {/* Cover */}
+      <View style={styles.cover}>
+        <SpeedLines focus={{ x: 0.5, y: 0.42 }} clear={0.3} count={96} seed={21} />
+        <View style={styles.coverTop}>
+          <CaptionTab>Vol. 1</CaptionTab>
+          <Text style={styles.coverSmall}>THE FAMILY, ON TIME</Text>
         </View>
-
-        <Text style={styles.word}>Akol</Text>
-
-        <View style={{ alignItems: 'center', marginTop: -space.md }}>
-          <Dial
-            tasks={preview.tasks}
-            members={preview.members}
-            completions={preview.completions}
-            day={preview.day}
-            now={preview.at}
-            size={dial}
-            onToggle={() => {}}
-            inverted
-          />
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>AKOL</Text>
+          <View style={styles.titleRule} />
+          <Text style={styles.subtitle}>アコル</Text>
         </View>
-
-        <Text style={styles.lede}>
-          Every member of the family is an orbit. Every task is a mark at its minute. The hand is now.
-        </Text>
-
-        <View style={styles.points}>
-          <Point n="i" text="A checklist for you, and one for each child." />
-          <Point n="ii" text="Reminders to the minute: 6:45 lunch, 6:55 bags, 7:00 GPS." />
-          <Point n="iii" text="At go time, Akol asks if everything is done, and shows what isn’t." />
+        <View style={styles.kanaColumn}>
+          {'時間通り'.split('').map((c, i) => (
+            <Text key={i} style={styles.kana}>
+              {c}
+            </Text>
+          ))}
         </View>
+        <Burst size={116} spikes={18} seed={2} style={styles.newBurst}>
+          <Text style={styles.newText}>NEW{'\n'}SERIES!</Text>
+        </Burst>
+        <SFX text="ドドド" size={42} rotate={-10} style={styles.coverSfx} />
+      </View>
 
-        <Text style={styles.label}>Your name</Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="Mark"
-          placeholderTextColor="rgba(251,251,249,0.35)"
-          selectionColor={colors.bg}
-          style={styles.input}
-          returnKeyType="done"
-        />
+      {/* Three panels */}
+      <View style={{ marginTop: space.xl, gap: space.md }}>
+        <Panel tilt={-1} tone={0.18}>
+          <View style={styles.panelTextBox}>
+            <Text style={styles.panelHead}>A quest log for every member!</Text>
+            <Text style={styles.panelBody}>Your list, the kids’ lists, and the whole party at a glance.</Text>
+          </View>
+        </Panel>
+        <View style={{ flexDirection: 'row', gap: space.md }}>
+          <View style={{ flex: 1 }}>
+            <Panel tilt={1.2} lines={{ x: 0.5, y: 0.5, clear: 0.34, count: 40 }} style={{ minHeight: 150 }}>
+              <View style={styles.panelTextBox}>
+                <Text style={styles.panelHead}>To the minute</Text>
+                <Text style={styles.panelBody}>6:45 lunch. 6:55 bags. 7:00 GPS.</Text>
+              </View>
+            </Panel>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Panel tilt={-0.8} inverted style={{ minHeight: 150 }}>
+              <Text style={[styles.panelHead, { color: colors.bg }]}>GO TIME!!</Text>
+              <Text style={[styles.panelBody, { color: colors.bg }]}>Akol asks if every quest is cleared, and names what isn’t.</Text>
+            </Panel>
+          </View>
+        </View>
+      </View>
 
-        <Pressable style={({ pressed }) => [styles.primary, pressed && { opacity: 0.8 }]} onPress={() => start(true)}>
-          <Text style={styles.primaryText}>Begin with the example family</Text>
-        </Pressable>
-        <Pressable style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.6 }]} onPress={() => start(false)}>
-          <Text style={styles.secondaryText}>Start from a blank page</Text>
-        </Pressable>
-        <Text style={styles.fine}>Private by design. Everything stays on this device.</Text>
-      </ScrollView>
-    </View>
+      <View style={{ marginTop: space.xxl }}>
+        <Field label="Your hero name" value={name} onChangeText={setName} placeholder="MARK" returnKeyType="done" />
+      </View>
+      <View style={{ gap: space.md, marginTop: space.xl }}>
+        <InkButton label="Start the story ▶" onPress={() => start(true)} />
+        <GhostButton label="Blank page" onPress={() => start(false)} />
+      </View>
+      <Text style={styles.fine}>Private by design. Everything stays on this device.</Text>
+    </Screen>
   );
 }
-
-function Point({ n, text }: { n: string; text: string }) {
-  return (
-    <View style={styles.point}>
-      <Text style={styles.pointN}>{n}.</Text>
-      <Text style={styles.pointText}>{text}</Text>
-    </View>
-  );
-}
-
-const paperDim = 'rgba(251,251,249,0.62)';
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: colors.ink },
-  content: { paddingHorizontal: space.xl, width: '100%', maxWidth: 560, alignSelf: 'center' },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  small: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: colors.bg },
-  word: {
-    fontFamily: fonts.masthead,
-    fontSize: 120,
-    lineHeight: 132,
-    letterSpacing: -4,
-    color: colors.bg,
-    textAlign: 'center',
-    marginTop: space.lg,
-  },
-  lede: {
-    fontFamily: fonts.italic,
-    fontSize: 22,
-    lineHeight: 30,
-    color: colors.bg,
-    textAlign: 'center',
-    marginTop: space.md,
-  },
-  points: { marginTop: space.xl, borderTopWidth: 1, borderTopColor: 'rgba(251,251,249,0.25)' },
-  point: {
-    flexDirection: 'row',
-    gap: space.lg,
-    paddingVertical: space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(251,251,249,0.25)',
-  },
-  pointN: { fontFamily: fonts.italic, fontSize: 18, color: colors.bg, width: 28 },
-  pointText: { flex: 1, fontFamily: fonts.light, fontSize: 15, lineHeight: 21, color: colors.bg },
-  label: {
-    fontFamily: fonts.semibold,
-    fontSize: 10,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    color: paperDim,
-    marginTop: space.xxl,
-  },
-  input: {
-    fontFamily: fonts.display,
-    fontSize: 34,
-    color: colors.bg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.bg,
-    paddingVertical: space.sm,
-  },
-  primary: {
+  cover: {
+    height: 420,
+    borderWidth: stroke.heavy,
+    borderColor: colors.ink,
+    overflow: 'hidden',
     backgroundColor: colors.bg,
-    borderRadius: radius.pill,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: space.xl,
+    padding: space.lg,
   },
-  primaryText: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.ink },
-  secondary: {
-    borderWidth: 1,
-    borderColor: colors.bg,
-    borderRadius: radius.pill,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: space.md,
+  coverTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  coverSmall: {
+    fontFamily: fonts.display,
+    fontSize: 10,
+    letterSpacing: 1.5,
+    color: colors.ink,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 4,
   },
-  secondaryText: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.bg },
-  fine: { fontFamily: fonts.light, fontSize: 12, color: paperDim, textAlign: 'center', marginTop: space.xl },
+  titleBlock: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  title: {
+    fontFamily: fonts.display,
+    fontSize: 92,
+    lineHeight: 108,
+    color: colors.ink,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 10,
+    transform: [{ skewX: SLANT }],
+  },
+  titleRule: { width: 180, height: stroke.heavy, backgroundColor: colors.ink, marginTop: 2 },
+  subtitle: {
+    fontFamily: fonts.display,
+    fontSize: 22,
+    letterSpacing: 10,
+    color: colors.bg,
+    backgroundColor: colors.ink,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    marginTop: space.sm,
+  },
+  kanaColumn: {
+    position: 'absolute',
+    left: 14,
+    top: 64,
+    backgroundColor: colors.ink,
+    paddingHorizontal: 5,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  kana: { fontFamily: fonts.display, fontSize: 18, lineHeight: 22, color: colors.bg, textAlign: 'center' },
+  newBurst: { position: 'absolute', right: 4, top: 44 },
+  newText: { fontFamily: fonts.display, fontSize: 11, lineHeight: 13, color: colors.ink, textAlign: 'center' },
+  coverSfx: { position: 'absolute', left: 18, bottom: 16 },
+  panelTextBox: { backgroundColor: colors.bg, alignSelf: 'flex-start', padding: 6 },
+  panelHead: { fontFamily: fonts.display, fontSize: 17, lineHeight: 22, color: colors.ink, textTransform: 'uppercase' },
+  panelBody: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 19, color: colors.ink, marginTop: 4 },
+  fine: { fontFamily: fonts.medium, textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint },
 });

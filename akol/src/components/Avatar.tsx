@@ -4,6 +4,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { FAMILY_ID } from '../lib/schedule';
 import type { Member } from '../lib/types';
 import { colors, familyJewel, fonts, jewels, type SealStyle } from '../theme';
+import { Tone } from './Manga';
 
 export function jewelFor(member: Member | undefined | null, memberId?: string) {
   if (!member) return memberId === FAMILY_ID ? familyJewel : jewels.adire;
@@ -15,7 +16,7 @@ export function ProgressRing({
   stroke = 3,
   ratio,
   color = colors.ink,
-  track = 'rgba(10,10,10,0.1)',
+  track = 'rgba(0,0,0,0.12)',
 }: {
   size: number;
   stroke?: number;
@@ -46,24 +47,23 @@ export function ProgressRing({
 }
 
 function sealStyle(style: SealStyle, d: number): { box: ViewStyle; ink: string } {
-  const round = { width: d, height: d, borderRadius: d / 2 };
+  const round = { width: d, height: d, borderRadius: d / 2, overflow: 'hidden' as const };
   switch (style) {
     case 'solid':
       return { box: { ...round, backgroundColor: colors.ink }, ink: colors.bg };
     case 'wash':
-      return { box: { ...round, borderWidth: 1.2, borderColor: colors.ink, borderStyle: 'dashed' }, ink: colors.ink };
-    case 'outline':
-      return { box: { ...round, borderWidth: 1, borderColor: colors.ink }, ink: colors.ink };
     case 'dotted':
-      return { box: { ...round, borderWidth: 2, borderColor: colors.ink, borderStyle: 'dotted' }, ink: colors.ink };
+      return { box: { ...round, borderWidth: 2, borderColor: colors.ink, backgroundColor: colors.bg }, ink: colors.ink };
+    case 'outline':
+      return { box: { ...round, borderWidth: 2, borderColor: colors.ink }, ink: colors.ink };
     case 'heavy':
-      return { box: { ...round, borderWidth: Math.max(3, d * 0.09), borderColor: colors.ink }, ink: colors.ink };
+      return { box: { ...round, borderWidth: Math.max(4, d * 0.12), borderColor: colors.ink }, ink: colors.ink };
     case 'double':
-      return { box: { ...round, borderWidth: 1, borderColor: colors.ink, padding: 2 }, ink: colors.ink };
+      return { box: { ...round, borderWidth: 2, borderColor: colors.ink, padding: 2 }, ink: colors.ink };
   }
 }
 
-/** A monogram seal in the member's line style. With `ratio`, it is ringed by a progress arc. */
+/** A character badge: the member's initial in title lettering, inked in their style. With `ratio`, ringed by progress. */
 export function Avatar({
   member,
   memberId,
@@ -81,7 +81,7 @@ export function Avatar({
   const { box, ink } = sealStyle(j.style, inner);
   const label = member?.emoji || (member ? member.name.slice(0, 1).toUpperCase() : '✠');
   const face = (
-    <Text style={{ fontSize: inner * 0.52, fontFamily: fonts.italic, color: ink, textAlign: 'center', includeFontPadding: false }}>
+    <Text style={{ fontSize: inner * 0.46, fontFamily: fonts.display, color: ink, textAlign: 'center', includeFontPadding: false }}>
       {label}
     </Text>
   );
@@ -93,7 +93,10 @@ export function Avatar({
         </View>
       )}
       <View style={[box, styles.center]}>
-        {j.style === 'double' ? (
+        {j.tone > 0 && <Tone density={j.tone} pitch={Math.max(4, inner / 9)} />}
+        {j.tone > 0 ? (
+          <View style={[styles.center, { backgroundColor: colors.bg, width: inner * 0.56, height: inner * 0.56, borderRadius: inner }]}>{face}</View>
+        ) : j.style === 'double' ? (
           <View style={[styles.center, styles.innerRing, { borderRadius: inner }]}>{face}</View>
         ) : (
           face

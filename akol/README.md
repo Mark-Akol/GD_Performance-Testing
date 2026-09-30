@@ -19,12 +19,14 @@ shows everyone's open items.
   <img src="docs/screenshots/family.png" width="200" alt="Family overview" />
 </p>
 
-**Design: the Dial.** Black and white only: a watch face crossed with a fashion magazine. Today's routine is drawn as
-a dial. The outer scale is the routine's window of time, and each family member is a concentric orbit in their own
-line style (solid, double, hairline, dashed, dotted, heavy). Every task is a mark at its exact minute, and you tap a
-mark to tick it off. The hand is now, and the Go-time checkpoint is a lozenge on the bezel. Go time itself is a solid
-black panel. Type is Bodoni Moda (high-contrast Didone) with Jost. Earlier looks are in git history: kente
-ebony-and-gold (`45d6d55`) and the 1920s broadsheet (`719242a`).
+**Design: manga edition.** Black and white, drawn like a shōnen manga page. It has heavy panel borders with hard
+offset shadows, screentone, radial speed lines, jagged impact bursts, outlined katakana sound effects (ドン, ゴゴゴ)
+and slanted caption tabs. Today is a splash panel headed *NEXT MISSION*. Checklists are quest logs with timecode
+tags, and cleared items get a *CLEAR!* stamp. Go time is a black impact panel with a speech bubble and a burst
+counter. Family members are the *party*, each with a character card, a progress bar and a streak combo. Type is Dela
+Gothic One, which includes the Japanese glyphs, with Chakra Petch. The drawing kit is in
+`src/components/Manga.tsx`. Earlier looks are in git history: kente (`45d6d55`), 1920s broadsheet (`719242a`) and
+the Dial (`195c29d`).
 
 **Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single
 self-contained page with the fonts embedded. It can be hosted anywhere. When you pick the example family on the web,

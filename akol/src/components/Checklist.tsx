@@ -14,51 +14,42 @@ import {
 } from '../lib/schedule';
 import { useAkol } from '../lib/store';
 import type { DayKey, Task } from '../lib/types';
-import { colors, fonts, lining, radius, space } from '../theme';
-import { Avatar } from './Avatar';
+import { colors, fonts, lining, SLANT, space, stroke } from '../theme';
+import { Burst, SFX, SpeedLines } from './Manga';
 import { tap } from './ui';
 
-function TimeLabel({ time, faded }: { time: string; faded?: boolean }) {
+/** The time as a slanted black timecode tag. */
+function TimeTag({ time, faded }: { time: string; faded?: boolean }) {
   const [clock, period] = formatTime(time).split(' ');
   return (
-    <View style={s.timeCol}>
-      <Text style={[s.time, faded && { color: colors.textFaint }]}>{clock}</Text>
-      <Text style={[s.ampm, faded && { color: colors.textFaint }]}>{period}</Text>
+    <View style={[s.timeTag, faded && s.timeTagFaded]}>
+      <Text style={[s.time, faded && { color: colors.ink }]}>{clock}</Text>
+      <Text style={[s.ampm, faded && { color: colors.ink }]}>{period.replace(/\./g, '')}</Text>
     </View>
   );
 }
 
-/** A round mark like the ones on the Dial: open, or filled solid when done. */
-export function CheckCircle({
-  done,
-  size = 28,
-  inverted,
-}: {
-  done: boolean;
-  color?: string;
-  size?: number;
-  inverted?: boolean;
-}) {
+/** A heavy square box; filled with a white tick when cleared. */
+export function CheckCircle({ done, size = 30, inverted }: { done: boolean; color?: string; size?: number; inverted?: boolean }) {
   const ink = inverted ? colors.bg : colors.ink;
   const paper = inverted ? colors.ink : colors.bg;
   return (
-    <View style={[s.check, { width: size, height: size, borderRadius: size / 2, borderColor: ink }, done && { backgroundColor: ink }]}>
-      {done && <Ionicons name="checkmark" size={size * 0.6} color={paper} />}
+    <View style={[s.check, { width: size, height: size, borderColor: ink }, done && { backgroundColor: ink }]}>
+      {done && <Ionicons name="checkmark-sharp" size={size * 0.72} color={paper} />}
     </View>
   );
 }
 
-/** "now", "late · 28 min", "in 7 min". */
 function StatusMark({ status, now, time }: { status: TaskStatus; now: Date; time: string }) {
   const rel = relative(atTime(now, time), now);
-  if (status === 'due')
+  if (status === 'due') return <Text style={s.nowText}>NOW!!</Text>;
+  if (status === 'overdue')
     return (
-      <View style={s.nowPill}>
-        <Text style={s.nowPillText}>Now</Text>
+      <View style={s.lateTag}>
+        <Text style={s.lateText}>LATE · {rel.replace(' ago', '')}</Text>
       </View>
     );
-  if (status === 'overdue') return <Text style={s.late}>✕ late · {rel.replace(' ago', '')}</Text>;
-  if (status === 'soon') return <Text style={s.soon}>{rel}</Text>;
+  if (status === 'soon') return <Text style={s.soon}>T-{rel.replace('in ', '').toUpperCase()}</Text>;
   return null;
 }
 
@@ -91,16 +82,11 @@ export function TaskRow({
         toggle(task.id, day);
       }}
       onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}
-      style={({ pressed }) => [s.row, pressed && { opacity: 0.55 }]}
+      style={({ pressed }) => [s.row, status === 'due' && s.rowDue, pressed && { opacity: 0.6 }]}
     >
-      <TimeLabel time={task.time} faded={done} />
+      <TimeTag time={task.time} faded={done} />
       <View style={s.rowBody}>
-        {showMember && (
-          <View style={s.byRow}>
-            <Avatar member={m} memberId={task.memberId} size={16} />
-            <Text style={s.byline}>{m ? m.name : 'Everyone'}</Text>
-          </View>
-        )}
+        {showMember && <Text style={s.byline}>{m ? m.name : 'Everyone'}</Text>}
         <Text style={[s.itemTitle, done && s.itemDone]} numberOfLines={2}>
           {task.title}
         </Text>
@@ -111,12 +97,17 @@ export function TaskRow({
           </View>
         )}
       </View>
+      {done && (
+        <View style={s.stamp} pointerEvents="none">
+          <Text style={s.stampText}>CLEAR!</Text>
+        </View>
+      )}
       <CheckCircle done={done} />
     </Pressable>
   );
 }
 
-/** Go time: a solid black panel that asks whether everything is done. */
+/** Go time: a black impact panel with speed lines, a sound effect and a speech bubble. */
 export function CheckpointCard({ task, day, now, isToday = true }: { task: Task; day: DayKey; now: Date; isToday?: boolean }) {
   const { state, member, toggle, dispatch } = useAkol();
   const [showDone, setShowDone] = useState(false);
@@ -127,72 +118,91 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
   const until = isToday ? relative(atTime(now, task.time), now) : '';
 
   return (
-    <View style={s.panel}>
-      <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}>
-        <View style={s.panelTop}>
-          <Text style={s.panelEyebrow}>{formatTime(task.time)} · Checkpoint</Text>
-          {isToday && !summary.complete && <Text style={s.panelEyebrow}>{reached ? 'Time is up' : until}</Text>}
-        </View>
-        <Text style={s.cpTitle}>{task.title}.</Text>
-        <Text style={s.cpDeck}>{summary.complete ? 'Everyone is ready. Off you go.' : (task.note ?? 'Have you completed the checklist?')}</Text>
-        <View style={s.tally}>
-          <Text style={s.cpCount}>{summary.done.length}</Text>
-          <Text style={s.cpOf}>/{total}</Text>
-          <Text style={s.cpReady}>ready</Text>
-        </View>
-        <View style={s.meter}>
-          <View style={[s.meterFill, { width: `${total ? (summary.done.length / total) * 100 : 0}%` }]} />
-        </View>
-      </Pressable>
+    <View style={s.panelWrap}>
+      <View style={s.panelShadow} />
+      <View style={s.panel}>
+        <SpeedLines focus={{ x: 0.3, y: 0.18 }} clear={0.22} count={72} inverted seed={11} style={{ opacity: 0.55 }} />
+        <SFX
+          text={summary.complete ? 'ダッ' : 'ゴゴゴ'}
+          size={34}
+          rotate={14}
+          inverted
+          style={{ position: 'absolute', right: -2, top: 96 }}
+        />
+        <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}>
+          <View style={s.panelTop}>
+            <View style={s.whiteTab}>
+              <Text style={s.whiteTabText}>{formatTime(task.time)} · Checkpoint</Text>
+            </View>
+            {isToday && !summary.complete && <Text style={s.panelEyebrow}>{reached ? 'TIME IS UP!' : until.toUpperCase()}</Text>}
+          </View>
+          <Text style={s.cpTitle}>{task.title}!!</Text>
 
-      {summary.outstanding.length > 0 && (
-        <View style={{ marginTop: space.lg }}>
-          {summary.outstanding.map((t) => (
+          <View style={s.bubbleRow}>
+            <View style={s.bubble}>
+              <Text style={s.bubbleText}>
+                {summary.complete ? 'Everyone is ready. Let’s go!' : (task.note ?? 'Have you completed the checklist?')}
+              </Text>
+              <View style={s.bubbleTail} />
+            </View>
+            <Burst size={92} spikes={16} seed={5}>
+              <Text style={s.burstCount}>
+                {summary.done.length}/{total}
+              </Text>
+              <Text style={s.burstLabel}>READY</Text>
+            </Burst>
+          </View>
+        </Pressable>
+
+        {summary.outstanding.length > 0 && (
+          <View style={{ marginTop: space.lg }}>
+            {summary.outstanding.map((t) => (
+              <Pressable
+                key={t.id}
+                style={s.cpItem}
+                onPress={() => {
+                  tap('success');
+                  toggle(t.id, day);
+                }}
+              >
+                <Text style={s.cpTime}>{formatTime(t.time).split(' ')[0]}</Text>
+                <Text style={s.cpItemText} numberOfLines={1}>
+                  {t.title}
+                </Text>
+                <Text style={s.cpWho}>{(member(t.memberId)?.name ?? '').toUpperCase()}</Text>
+                <CheckCircle done={false} size={22} inverted />
+              </Pressable>
+            ))}
             <Pressable
-              key={t.id}
-              style={s.cpItem}
               onPress={() => {
                 tap('success');
-                toggle(t.id, day);
+                for (const t of summary.outstanding) dispatch({ type: 'toggle', taskId: t.id, day, done: true });
               }}
+              style={s.allDone}
             >
-              <Text style={s.cpTime}>{formatTime(t.time).split(' ')[0]}</Text>
-              <Text style={s.cpItemText} numberOfLines={1}>
+              <Text style={s.allDoneText}>All clear!</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {summary.done.length > 0 && (
+          <Pressable onPress={() => setShowDone((v) => !v)} style={{ marginTop: space.md }}>
+            <Text style={s.panelNote}>
+              {showDone ? 'HIDE' : 'SHOW'} {summary.done.length} CLEARED {showDone ? '▲' : '▼'}
+            </Text>
+          </Pressable>
+        )}
+        {showDone &&
+          summary.done.map((t) => (
+            <Pressable key={t.id} style={s.cpItem} onPress={() => toggle(t.id, day)}>
+              <Text style={[s.cpTime, { opacity: 0.5 }]}>{formatTime(t.time).split(' ')[0]}</Text>
+              <Text style={[s.cpItemText, { opacity: 0.5, textDecorationLine: 'line-through' }]} numberOfLines={1}>
                 {t.title}
               </Text>
-              <Text style={s.cpWho}>{member(t.memberId)?.name ?? ''}</Text>
-              <CheckCircle done={false} size={22} inverted />
+              <CheckCircle done size={22} inverted />
             </Pressable>
           ))}
-          <Pressable
-            onPress={() => {
-              tap('success');
-              for (const t of summary.outstanding) dispatch({ type: 'toggle', taskId: t.id, day, done: true });
-            }}
-            style={s.allDone}
-          >
-            <Text style={s.allDoneText}>Mark all done</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {summary.done.length > 0 && (
-        <Pressable onPress={() => setShowDone((v) => !v)} style={{ marginTop: space.md }}>
-          <Text style={s.panelNote}>
-            {showDone ? 'Hide' : 'Show'} {summary.done.length} done {showDone ? '↑' : '↓'}
-          </Text>
-        </Pressable>
-      )}
-      {showDone &&
-        summary.done.map((t) => (
-          <Pressable key={t.id} style={s.cpItem} onPress={() => toggle(t.id, day)}>
-            <Text style={[s.cpTime, { opacity: 0.5 }]}>{formatTime(t.time).split(' ')[0]}</Text>
-            <Text style={[s.cpItemText, { opacity: 0.5, textDecorationLine: 'line-through' }]} numberOfLines={1}>
-              {t.title}
-            </Text>
-            <CheckCircle done size={22} inverted />
-          </Pressable>
-        ))}
+      </View>
     </View>
   );
 }
@@ -223,61 +233,127 @@ export function Timeline({
   );
 }
 
+const paperDim = 'rgba(255,255,255,0.7)';
+
 const s = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.lg,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.hairline,
+    gap: space.md,
+    paddingVertical: 14,
+    borderBottomWidth: stroke.line,
+    borderBottomColor: colors.ink,
   },
-  timeCol: { width: 62, alignItems: 'flex-start' },
-  time: { fontFamily: fonts.display, fontSize: 28, lineHeight: 32, letterSpacing: -0.5, color: colors.text, ...lining },
-  ampm: { fontFamily: fonts.italic, fontSize: 12, color: colors.textDim, marginTop: -2 },
-  rowBody: { flex: 1, gap: 4 },
-  byRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  byline: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 2.2, textTransform: 'uppercase', color: colors.textDim },
-  itemTitle: { fontFamily: fonts.body, fontSize: 17, lineHeight: 22, color: colors.text },
+  rowDue: { backgroundColor: colors.wash, marginHorizontal: -8, paddingHorizontal: 8 },
+  timeTag: {
+    width: 66,
+    backgroundColor: colors.ink,
+    paddingVertical: 5,
+    alignItems: 'center',
+    transform: [{ skewX: SLANT }],
+  },
+  timeTagFaded: { backgroundColor: colors.bg, borderWidth: stroke.line, borderColor: colors.ink },
+  time: { fontFamily: fonts.display, fontSize: 17, lineHeight: 21, color: colors.bg, ...lining },
+  ampm: { fontFamily: fonts.semibold, fontSize: 9, letterSpacing: 1.5, color: colors.bg, textTransform: 'uppercase' },
+  rowBody: { flex: 1, gap: 3 },
+  byline: { fontFamily: fonts.display, fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.ink },
+  itemTitle: { fontFamily: fonts.semibold, fontSize: 17, lineHeight: 21, color: colors.text },
   itemDone: { color: colors.textFaint, textDecorationLine: 'line-through' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
-  nowPill: { backgroundColor: colors.ink, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 2 },
-  nowPillText: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 2, textTransform: 'uppercase', color: colors.bg },
-  late: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.ink },
-  soon: { fontFamily: fonts.italic, fontSize: 14, color: colors.text },
-  note: { fontFamily: fonts.light, fontSize: 13, color: colors.textDim, flexShrink: 1 },
-  check: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  nowText: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 1, color: colors.ink },
+  lateTag: { backgroundColor: colors.ink, paddingHorizontal: 7, paddingVertical: 2, transform: [{ skewX: SLANT }] },
+  lateText: { fontFamily: fonts.display, fontSize: 10, letterSpacing: 1, color: colors.bg },
+  soon: { fontFamily: fonts.displayItalic, fontSize: 13, letterSpacing: 1, color: colors.ink },
+  note: { fontFamily: fonts.italic, fontSize: 13, color: colors.textDim, flexShrink: 1 },
+  stamp: {
+    position: 'absolute',
+    right: 44,
+    borderWidth: stroke.line,
+    borderColor: colors.ink,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    transform: [{ rotate: '-10deg' }],
+    backgroundColor: colors.bg,
+  },
+  stampText: { fontFamily: fonts.display, fontSize: 12, letterSpacing: 1, color: colors.ink },
+  check: { borderWidth: stroke.panel, alignItems: 'center', justifyContent: 'center' },
 
-  panel: { backgroundColor: colors.ink, padding: space.xl, marginVertical: space.lg },
-  panelTop: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm },
-  panelEyebrow: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.bg },
-  panelNote: { fontFamily: fonts.light, fontSize: 13, color: 'rgba(251,251,249,0.7)' },
-  cpTitle: { fontFamily: fonts.italic, fontSize: 58, lineHeight: 64, letterSpacing: -1, color: colors.bg, marginTop: space.md },
-  cpDeck: { fontFamily: fonts.light, fontSize: 17, lineHeight: 23, color: colors.bg },
-  tally: { flexDirection: 'row', alignItems: 'baseline', marginTop: space.lg },
-  cpCount: { fontFamily: fonts.display, fontSize: 64, lineHeight: 68, color: colors.bg, letterSpacing: -2, ...lining },
-  cpOf: { fontFamily: fonts.display, fontSize: 28, color: 'rgba(251,251,249,0.55)', ...lining },
-  cpReady: { fontFamily: fonts.italic, fontSize: 18, color: colors.bg, marginLeft: space.sm },
-  meter: { height: 2, backgroundColor: 'rgba(251,251,249,0.2)', marginTop: space.sm },
-  meterFill: { height: 2, backgroundColor: colors.bg },
+  panelWrap: { marginVertical: space.lg, paddingRight: 6, paddingBottom: 6 },
+  panelShadow: {
+    position: 'absolute',
+    left: 6,
+    top: 6,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.bg,
+    borderWidth: stroke.panel,
+    borderColor: colors.ink,
+  },
+  panel: {
+    backgroundColor: colors.ink,
+    padding: space.xl,
+    overflow: 'hidden',
+    borderWidth: stroke.panel,
+    borderColor: colors.ink,
+  },
+  panelTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
+  whiteTab: { backgroundColor: colors.bg, paddingHorizontal: 10, paddingVertical: 4, transform: [{ skewX: SLANT }] },
+  whiteTabText: { fontFamily: fonts.display, fontSize: 11, letterSpacing: 1, color: colors.ink, textTransform: 'uppercase' },
+  panelEyebrow: { fontFamily: fonts.display, fontSize: 12, letterSpacing: 1, color: colors.bg },
+  panelNote: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1.5, color: paperDim },
+  cpTitle: {
+    fontFamily: fonts.display,
+    fontSize: 50,
+    lineHeight: 60,
+    color: colors.bg,
+    marginTop: space.md,
+    textTransform: 'uppercase',
+    transform: [{ skewX: SLANT }],
+  },
+  bubbleRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.md },
+  bubble: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    borderWidth: stroke.panel,
+    borderColor: colors.ink,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  bubbleTail: {
+    position: 'absolute',
+    left: 26,
+    bottom: -9,
+    width: 16,
+    height: 16,
+    backgroundColor: colors.bg,
+    borderRightWidth: stroke.panel,
+    borderBottomWidth: stroke.panel,
+    borderColor: colors.ink,
+    transform: [{ rotate: '45deg' }],
+  },
+  bubbleText: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, color: colors.ink },
+  burstCount: { fontFamily: fonts.display, fontSize: 20, color: colors.ink, ...lining },
+  burstLabel: { fontFamily: fonts.semibold, fontSize: 8, letterSpacing: 1.5, color: colors.ink, marginTop: -2 },
   cpItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingVertical: 12,
+    paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(251,251,249,0.16)',
+    borderBottomColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: colors.ink,
   },
-  cpTime: { fontFamily: fonts.display, fontSize: 17, color: colors.bg, width: 40, ...lining },
-  cpItemText: { flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.bg },
-  cpWho: { fontFamily: fonts.italic, fontSize: 13, color: 'rgba(251,251,249,0.7)' },
+  cpTime: { fontFamily: fonts.display, fontSize: 14, color: colors.bg, width: 50, ...lining },
+  cpItemText: { flex: 1, fontFamily: fonts.semibold, fontSize: 15, color: colors.bg },
+  cpWho: { fontFamily: fonts.display, fontSize: 10, letterSpacing: 1, color: paperDim },
   allDone: {
     alignSelf: 'flex-start',
     marginTop: space.lg,
     backgroundColor: colors.bg,
-    borderRadius: radius.pill,
     paddingVertical: 11,
-    paddingHorizontal: 20,
+    paddingHorizontal: 22,
+    transform: [{ skewX: SLANT }],
   },
-  allDoneText: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.ink },
+  allDoneText: { fontFamily: fonts.display, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', color: colors.ink },
 });
