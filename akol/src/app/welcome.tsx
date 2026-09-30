@@ -1,20 +1,41 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DoubleRule, Fleuron, Rule } from '../components/Rules';
-import { Dim, Field, GhostButton, InkButton, Screen } from '../components/ui';
+import { Dial } from '../components/Dial';
+import { tap } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
+import { dayKey } from '../lib/schedule';
 import { exampleFamily, freshFamily } from '../lib/seed';
 import { useAkol } from '../lib/store';
-import { colors, fonts, space } from '../theme';
+import { colors, fonts, radius, space } from '../theme';
 
-/** First run, set as the front page of a first edition. */
+/** First run: a black page, the Dial turning in white, and one question. */
 export default function Welcome() {
   const { dispatch } = useAkol();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const [name, setName] = useState('');
 
+  // A frozen school morning at 6:48 a.m. to show what the Dial looks like in use.
+  const preview = useMemo(() => {
+    const s = exampleFamily();
+    const at = new Date();
+    at.setHours(6, 48, 0, 0);
+    const day = dayKey(at);
+    const done = ['t_mk_coffee', 't_ra_up', 't_ra_teeth', 't_mk_breakfast', 't_ra_dress'];
+    return {
+      tasks: s.tasks.filter((t) => t.routineId === 'r_school'),
+      members: s.members,
+      completions: { [day]: Object.fromEntries(done.map((id) => [id, 1])) },
+      day,
+      at,
+    };
+  }, []);
+
   const start = async (example: boolean) => {
+    tap('medium');
     const parent = name.trim() || 'Mark';
     const state = example ? exampleFamily(parent) : freshFamily(parent);
     if (example && Platform.OS === 'web') {
@@ -27,90 +48,142 @@ export default function Welcome() {
     router.replace(example ? '/' : '/routines');
   };
 
+  const dial = Math.min(width - 48, 340);
+
   return (
-    <Screen contentStyle={{ paddingBottom: 60 }}>
-      <View style={styles.ears}>
-        <Text style={styles.ear}>First Edition</Text>
-        <Text style={styles.ear}>Vol. I · No. 1</Text>
-      </View>
-      <Rule style={{ marginTop: space.sm }} />
-      <Text style={styles.masthead}>Akol</Text>
-      <Text style={styles.motto}>“Every Task in Its Hour”</Text>
-      <DoubleRule style={{ marginTop: space.sm }} />
-      <Text style={styles.dateline}>PRIVATE BY DESIGN · STORED ON YOUR DEVICE · NO ACCOUNT REQUIRED</Text>
-      <DoubleRule inverted />
+    <View style={styles.page}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + 48 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topRow}>
+          <Text style={styles.small}>No. 01</Text>
+          <Text style={styles.small}>The family, on time</Text>
+        </View>
 
-      <Text style={styles.extra}>Extra!</Text>
-      <Text style={styles.headline}>Family Now Runs to the Minute</Text>
-      <Rule style={styles.shortRule} />
-      <Text style={styles.deck}>A Checklist for Every Member, and a Bulletin at Go Time Asking Whether All Is Done</Text>
-      <Rule style={styles.shortRule} />
+        <Text style={styles.word}>Akol</Text>
 
-      <View style={styles.columns}>
-        <Column head="Lists for All" body="Your list, the children’s lists, and the whole household at a glance." />
-        <View style={styles.gutter} />
-        <Column head="To the Minute" body="6:45 pack lunch. 6:55 bags in the car. 7:30 go time." />
-        <View style={styles.gutter} />
-        <Column head="The Bulletin" body="At go time Akol asks if everything is done, and names what isn’t." />
-      </View>
+        <View style={{ alignItems: 'center', marginTop: -space.md }}>
+          <Dial
+            tasks={preview.tasks}
+            members={preview.members}
+            completions={preview.completions}
+            day={preview.day}
+            now={preview.at}
+            size={dial}
+            onToggle={() => {}}
+            inverted
+          />
+        </View>
 
-      <Fleuron style={{ marginVertical: space.xl }} />
+        <Text style={styles.lede}>
+          Every member of the family is an orbit. Every task is a mark at its minute. The hand is now.
+        </Text>
 
-      <Field label="Your name, for the masthead" value={name} onChangeText={setName} placeholder="Mark" returnKeyType="done" />
-      <View style={{ gap: space.md, marginTop: space.xl }}>
-        <InkButton label="Begin with the example family" onPress={() => start(true)} />
-        <GhostButton label="Start from a blank page" onPress={() => start(false)} />
-      </View>
-      <Dim style={styles.fine}>Set in Old Standard and Libre Caslon. Printed on your phone.</Dim>
-    </Screen>
-  );
-}
+        <View style={styles.points}>
+          <Point n="i" text="A checklist for you, and one for each child." />
+          <Point n="ii" text="Reminders to the minute: 6:45 lunch, 6:55 bags, 7:00 GPS." />
+          <Point n="iii" text="At go time, Akol asks if everything is done, and shows what isn’t." />
+        </View>
 
-function Column({ head, body }: { head: string; body: string }) {
-  return (
-    <View style={styles.column}>
-      <Text style={styles.columnHead}>{head}</Text>
-      <Text style={styles.columnBody}>{body}</Text>
+        <Text style={styles.label}>Your name</Text>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder="Mark"
+          placeholderTextColor="rgba(251,251,249,0.35)"
+          selectionColor={colors.bg}
+          style={styles.input}
+          returnKeyType="done"
+        />
+
+        <Pressable style={({ pressed }) => [styles.primary, pressed && { opacity: 0.8 }]} onPress={() => start(true)}>
+          <Text style={styles.primaryText}>Begin with the example family</Text>
+        </Pressable>
+        <Pressable style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.6 }]} onPress={() => start(false)}>
+          <Text style={styles.secondaryText}>Start from a blank page</Text>
+        </Pressable>
+        <Text style={styles.fine}>Private by design. Everything stays on this device.</Text>
+      </ScrollView>
     </View>
   );
 }
 
+function Point({ n, text }: { n: string; text: string }) {
+  return (
+    <View style={styles.point}>
+      <Text style={styles.pointN}>{n}.</Text>
+      <Text style={styles.pointText}>{text}</Text>
+    </View>
+  );
+}
+
+const paperDim = 'rgba(251,251,249,0.62)';
+
 const styles = StyleSheet.create({
-  ears: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
-  ear: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.ink },
-  masthead: { fontFamily: fonts.masthead, fontSize: 88, lineHeight: 100, color: colors.ink, textAlign: 'center', marginTop: space.md },
-  motto: { fontFamily: fonts.displayItalic, fontSize: 15, color: colors.inkSoft, textAlign: 'center', marginTop: -6 },
-  dateline: {
-    fontFamily: fonts.displayMedium,
-    fontSize: 9.5,
-    letterSpacing: 1.2,
-    color: colors.ink,
+  page: { flex: 1, backgroundColor: colors.ink },
+  content: { paddingHorizontal: space.xl, width: '100%', maxWidth: 560, alignSelf: 'center' },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  small: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: colors.bg },
+  word: {
+    fontFamily: fonts.masthead,
+    fontSize: 120,
+    lineHeight: 132,
+    letterSpacing: -4,
+    color: colors.bg,
     textAlign: 'center',
-    paddingVertical: 5,
+    marginTop: space.lg,
   },
-  extra: { fontFamily: fonts.masthead, fontSize: 30, color: colors.ink, textAlign: 'center', marginTop: space.xl },
-  headline: {
-    fontFamily: fonts.display,
-    fontSize: 40,
-    lineHeight: 44,
+  lede: {
+    fontFamily: fonts.italic,
+    fontSize: 22,
+    lineHeight: 30,
+    color: colors.bg,
+    textAlign: 'center',
+    marginTop: space.md,
+  },
+  points: { marginTop: space.xl, borderTopWidth: 1, borderTopColor: 'rgba(251,251,249,0.25)' },
+  point: {
+    flexDirection: 'row',
+    gap: space.lg,
+    paddingVertical: space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(251,251,249,0.25)',
+  },
+  pointN: { fontFamily: fonts.italic, fontSize: 18, color: colors.bg, width: 28 },
+  pointText: { flex: 1, fontFamily: fonts.light, fontSize: 15, lineHeight: 21, color: colors.bg },
+  label: {
+    fontFamily: fonts.semibold,
+    fontSize: 10,
+    letterSpacing: 3,
     textTransform: 'uppercase',
-    textAlign: 'center',
-    color: colors.ink,
-    marginTop: space.xs,
+    color: paperDim,
+    marginTop: space.xxl,
   },
-  shortRule: { width: 64, alignSelf: 'center', marginVertical: space.sm },
-  deck: { fontFamily: fonts.displayItalic, fontSize: 18, lineHeight: 24, textAlign: 'center', color: colors.ink },
-  columns: { flexDirection: 'row', marginTop: space.lg },
-  gutter: { width: 1, backgroundColor: colors.ink, marginHorizontal: space.sm },
-  column: { flex: 1, gap: 4 },
-  columnHead: {
+  input: {
     fontFamily: fonts.display,
-    fontSize: 12.5,
-    lineHeight: 15,
-    textTransform: 'uppercase',
-    color: colors.ink,
-    textAlign: 'center',
+    fontSize: 34,
+    color: colors.bg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.bg,
+    paddingVertical: space.sm,
   },
-  columnBody: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.text, textAlign: 'center' },
-  fine: { textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint, fontFamily: fonts.italic },
+  primary: {
+    backgroundColor: colors.bg,
+    borderRadius: radius.pill,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: space.xl,
+  },
+  primaryText: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.ink },
+  secondary: {
+    borderWidth: 1,
+    borderColor: colors.bg,
+    borderRadius: radius.pill,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: space.md,
+  },
+  secondaryText: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.bg },
+  fine: { fontFamily: fonts.light, fontSize: 12, color: paperDim, textAlign: 'center', marginTop: space.xl },
 });

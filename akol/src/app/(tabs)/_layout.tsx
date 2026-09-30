@@ -1,22 +1,20 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DoubleRule } from '../../components/Rules';
 import { useAkol } from '../../lib/store';
 import { colors, fonts } from '../../theme';
 
-type IconName = keyof typeof Ionicons.glyphMap;
-
-const TABS: { name: string; title: string; icon: IconName; iconActive: IconName }[] = [
-  { name: 'index', title: 'Today', icon: 'sunny-outline', iconActive: 'sunny' },
-  { name: 'family', title: 'Family', icon: 'people-outline', iconActive: 'people' },
-  { name: 'routines', title: 'Routines', icon: 'time-outline', iconActive: 'time' },
-  { name: 'settings', title: 'Settings', icon: 'options-outline', iconActive: 'options' },
+const TABS: { name: string; title: string }[] = [
+  { name: 'index', title: 'Today' },
+  { name: 'family', title: 'Family' },
+  { name: 'routines', title: 'Routines' },
+  { name: 'settings', title: 'Settings' },
 ];
 
 export default function TabsLayout() {
   const { state } = useAkol();
+  const insets = useSafeAreaInsets();
   if (!state.settings.onboarded) return <Redirect href="/welcome" />;
 
   return (
@@ -26,17 +24,20 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.textFaint,
         sceneStyle: { backgroundColor: colors.bg },
-        tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 1.4, textTransform: 'uppercase' },
+        tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 9.5, lineHeight: 14, letterSpacing: 2.2, textTransform: 'uppercase', marginTop: 6 },
+        tabBarIconStyle: { height: 12, minHeight: 12 },
+        tabBarItemStyle: { justifyContent: 'center' },
         tabBarStyle: {
           position: 'absolute',
           borderTopWidth: 0,
+          height: 72 + insets.bottom,
+          paddingTop: 12,
+          paddingBottom: insets.bottom + 12,
           backgroundColor: colors.bg,
           elevation: 0,
         },
         tabBarBackground: () => (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]}>
-            <DoubleRule inverted />
-          </View>
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.ink }]} />
         ),
       }}
     >
@@ -46,8 +47,18 @@ export default function TabsLayout() {
           name={t.name}
           options={{
             title: t.title,
-            tabBarIcon: ({ focused, color, size }) => (
-              <Ionicons name={focused ? t.iconActive : t.icon} size={size - 2} color={color} />
+            // Each tab is a mark from the Dial: open, or filled when you're on it.
+            tabBarIcon: ({ focused }) => (
+              <View
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  borderWidth: 1,
+                  borderColor: colors.ink,
+                  backgroundColor: focused ? colors.ink : 'transparent',
+                }}
+              />
             ),
           }}
         />

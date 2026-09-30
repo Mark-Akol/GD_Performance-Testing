@@ -15,7 +15,7 @@ export function ProgressRing({
   stroke = 3,
   ratio,
   color = colors.ink,
-  track = 'rgba(20,20,20,0.12)',
+  track = 'rgba(10,10,10,0.1)',
 }: {
   size: number;
   stroke?: number;
@@ -51,9 +51,9 @@ function sealStyle(style: SealStyle, d: number): { box: ViewStyle; ink: string }
     case 'solid':
       return { box: { ...round, backgroundColor: colors.ink }, ink: colors.bg };
     case 'wash':
-      return { box: { ...round, backgroundColor: '#5E5A51' }, ink: colors.bg };
+      return { box: { ...round, borderWidth: 1.2, borderColor: colors.ink, borderStyle: 'dashed' }, ink: colors.ink };
     case 'outline':
-      return { box: { ...round, borderWidth: 1.5, borderColor: colors.ink }, ink: colors.ink };
+      return { box: { ...round, borderWidth: 1, borderColor: colors.ink }, ink: colors.ink };
     case 'dotted':
       return { box: { ...round, borderWidth: 2, borderColor: colors.ink, borderStyle: 'dotted' }, ink: colors.ink };
     case 'heavy':
@@ -63,7 +63,7 @@ function sealStyle(style: SealStyle, d: number): { box: ViewStyle; ink: string }
   }
 }
 
-/** A monogram seal, engraved in one of six styles. With `ratio`, it is ringed by a progress arc. */
+/** A monogram seal in the member's line style. With `ratio`, it is ringed by a progress arc. */
 export function Avatar({
   member,
   memberId,
@@ -81,7 +81,7 @@ export function Avatar({
   const { box, ink } = sealStyle(j.style, inner);
   const label = member?.emoji || (member ? member.name.slice(0, 1).toUpperCase() : '✠');
   const face = (
-    <Text style={{ fontSize: inner * 0.48, fontFamily: fonts.display, color: ink, textAlign: 'center', includeFontPadding: false }}>
+    <Text style={{ fontSize: inner * 0.52, fontFamily: fonts.italic, color: ink, textAlign: 'center', includeFontPadding: false }}>
       {label}
     </Text>
   );

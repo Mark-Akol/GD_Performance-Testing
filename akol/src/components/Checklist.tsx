@@ -14,48 +14,52 @@ import {
 } from '../lib/schedule';
 import { useAkol } from '../lib/store';
 import type { DayKey, Task } from '../lib/types';
-import { colors, fonts, lining, space } from '../theme';
+import { colors, fonts, lining, radius, space } from '../theme';
 import { Avatar } from './Avatar';
-import { DoubleRule } from './Rules';
-import { Card, Eyebrow, tap } from './ui';
-
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  done: 'Done',
-  overdue: 'Late',
-  due: 'Due now',
-  soon: 'Coming up',
-  upcoming: '',
-};
+import { tap } from './ui';
 
 function TimeLabel({ time, faded }: { time: string; faded?: boolean }) {
   const [clock, period] = formatTime(time).split(' ');
   return (
     <View style={s.timeCol}>
       <Text style={[s.time, faded && { color: colors.textFaint }]}>{clock}</Text>
-      <Text style={s.ampm}>{period}</Text>
+      <Text style={[s.ampm, faded && { color: colors.textFaint }]}>{period}</Text>
     </View>
   );
 }
 
-/** A printed ballot box: empty, or struck through with a tick in reversed ink. */
-export function CheckCircle({ done, size = 26 }: { done: boolean; color?: string; size?: number }) {
+/** A round mark like the ones on the Dial: open, or filled solid when done. */
+export function CheckCircle({
+  done,
+  size = 28,
+  inverted,
+}: {
+  done: boolean;
+  color?: string;
+  size?: number;
+  inverted?: boolean;
+}) {
+  const ink = inverted ? colors.bg : colors.ink;
+  const paper = inverted ? colors.ink : colors.bg;
   return (
-    <View style={[s.check, { width: size, height: size }, done && { backgroundColor: colors.ink }]}>
-      {done && <Ionicons name="checkmark" size={size * 0.72} color={colors.bg} />}
+    <View style={[s.check, { width: size, height: size, borderRadius: size / 2, borderColor: ink }, done && { backgroundColor: ink }]}>
+      {done && <Ionicons name="checkmark" size={size * 0.6} color={paper} />}
     </View>
   );
 }
 
-/** "Late", "Due now" and friends, set as a newspaper would flag them. */
-function StatusMark({ status, text }: { status: TaskStatus; text: string }) {
-  if (!text) return null;
-  if (status === 'overdue')
+/** "now", "late · 28 min", "in 7 min". */
+function StatusMark({ status, now, time }: { status: TaskStatus; now: Date; time: string }) {
+  const rel = relative(atTime(now, time), now);
+  if (status === 'due')
     return (
-      <View style={s.reversed}>
-        <Text style={s.reversedText}>{text}</Text>
+      <View style={s.nowPill}>
+        <Text style={s.nowPillText}>Now</Text>
       </View>
     );
-  return <Text style={[s.hint, status === 'soon' && { fontFamily: fonts.italic, textTransform: 'none', letterSpacing: 0 }]}>{text}</Text>;
+  if (status === 'overdue') return <Text style={s.late}>✕ late · {rel.replace(' ago', '')}</Text>;
+  if (status === 'soon') return <Text style={s.soon}>{rel}</Text>;
+  return null;
 }
 
 export function TaskRow({
@@ -77,10 +81,6 @@ export function TaskRow({
   const status: TaskStatus = isToday ? taskStatus(task, done, now) : done ? 'done' : 'upcoming';
   const m = member(task.memberId);
 
-  let hint = STATUS_LABEL[status];
-  if (isToday && (status === 'soon' || status === 'overdue')) hint = `${hint} · ${relative(atTime(now, task.time), now)}`;
-  if (status === 'soon') hint = relative(atTime(now, task.time), now);
-
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -91,17 +91,22 @@ export function TaskRow({
         toggle(task.id, day);
       }}
       onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}
-      style={({ pressed }) => [s.row, status === 'due' && s.rowDue, pressed && { opacity: 0.6 }]}
+      style={({ pressed }) => [s.row, pressed && { opacity: 0.55 }]}
     >
       <TimeLabel time={task.time} faded={done} />
       <View style={s.rowBody}>
-        {showMember && <Text style={s.byline}>{m ? m.name : 'The Family'}</Text>}
+        {showMember && (
+          <View style={s.byRow}>
+            <Avatar member={m} memberId={task.memberId} size={16} />
+            <Text style={s.byline}>{m ? m.name : 'Everyone'}</Text>
+          </View>
+        )}
         <Text style={[s.itemTitle, done && s.itemDone]} numberOfLines={2}>
           {task.title}
         </Text>
-        {((!!hint && !done) || !!task.note) && (
+        {!done && (status !== 'upcoming' || !!task.note) && (
           <View style={s.meta}>
-            {!done && <StatusMark status={status} text={hint} />}
+            {isToday && <StatusMark status={status} now={now} time={task.time} />}
             {!!task.note && <Text style={s.note} numberOfLines={1}>{task.note}</Text>}
           </View>
         )}
@@ -111,38 +116,37 @@ export function TaskRow({
   );
 }
 
-/** "Go time — have you completed the checklist?" */
+/** Go time: a solid black panel that asks whether everything is done. */
 export function CheckpointCard({ task, day, now, isToday = true }: { task: Task; day: DayKey; now: Date; isToday?: boolean }) {
   const { state, member, toggle, dispatch } = useAkol();
   const [showDone, setShowDone] = useState(false);
   const summary = checkpointSummary(task, state, state.completions, day);
   const total = summary.done.length + summary.outstanding.length;
-  const reached = isToday && taskStatus(task, false, now) !== 'upcoming' && taskStatus(task, false, now) !== 'soon';
+  const st = taskStatus(task, false, now);
+  const reached = isToday && st !== 'upcoming' && st !== 'soon';
   const until = isToday ? relative(atTime(now, task.time), now) : '';
 
   return (
-    <Card glow style={{ marginVertical: space.md }}>
-      <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })} style={{ alignItems: 'center' }}>
-        <Eyebrow>{summary.complete ? 'Late Edition' : 'Bulletin'} · {formatTime(task.time)}</Eyebrow>
-        <Text style={s.cpTitle}>{task.title}</Text>
-        <Text style={s.cpDeck}>
-          {summary.complete ? 'Every Item Checked Off; Family Ready to Depart' : (task.note ?? 'Have you completed the checklist?')}
-        </Text>
-        <DoubleRule style={{ marginVertical: space.md }} />
-        <View style={s.cpTally}>
-          <Text style={s.cpCount}>
-            {summary.done.length}
-            <Text style={s.cpOf}> of {total} ready</Text>
-          </Text>
-          {isToday && !summary.complete && (
-            <Text style={[s.hint, reached && s.reversedInline]}>{reached ? ' Time is up ' : until}</Text>
-          )}
+    <View style={s.panel}>
+      <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}>
+        <View style={s.panelTop}>
+          <Text style={s.panelEyebrow}>{formatTime(task.time)} · Checkpoint</Text>
+          {isToday && !summary.complete && <Text style={s.panelEyebrow}>{reached ? 'Time is up' : until}</Text>}
+        </View>
+        <Text style={s.cpTitle}>{task.title}.</Text>
+        <Text style={s.cpDeck}>{summary.complete ? 'Everyone is ready. Off you go.' : (task.note ?? 'Have you completed the checklist?')}</Text>
+        <View style={s.tally}>
+          <Text style={s.cpCount}>{summary.done.length}</Text>
+          <Text style={s.cpOf}>/{total}</Text>
+          <Text style={s.cpReady}>ready</Text>
+        </View>
+        <View style={s.meter}>
+          <View style={[s.meterFill, { width: `${total ? (summary.done.length / total) * 100 : 0}%` }]} />
         </View>
       </Pressable>
 
       {summary.outstanding.length > 0 && (
-        <View style={{ marginTop: space.md }}>
-          <Eyebrow style={{ fontSize: 10, marginBottom: 4 }}>Still Outstanding</Eyebrow>
+        <View style={{ marginTop: space.lg }}>
           {summary.outstanding.map((t) => (
             <Pressable
               key={t.id}
@@ -152,11 +156,12 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
                 toggle(t.id, day);
               }}
             >
-              <Avatar member={member(t.memberId)} memberId={t.memberId} size={22} />
-              <Text style={s.cpItemText} numberOfLines={1}>{t.title}</Text>
-              <View style={s.leader} />
-              <Text style={s.cpTime}>{formatTime(t.time)}</Text>
-              <CheckCircle done={false} size={20} />
+              <Text style={s.cpTime}>{formatTime(t.time).split(' ')[0]}</Text>
+              <Text style={s.cpItemText} numberOfLines={1}>
+                {t.title}
+              </Text>
+              <Text style={s.cpWho}>{member(t.memberId)?.name ?? ''}</Text>
+              <CheckCircle done={false} size={22} inverted />
             </Pressable>
           ))}
           <Pressable
@@ -166,28 +171,29 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
             }}
             style={s.allDone}
           >
-            <Text style={s.allDoneText}>Mark all as done ☞</Text>
+            <Text style={s.allDoneText}>Mark all done</Text>
           </Pressable>
         </View>
       )}
 
       {summary.done.length > 0 && (
-        <Pressable onPress={() => setShowDone((v) => !v)} style={{ marginTop: space.sm }}>
-          <Text style={[s.note, { fontSize: 13 }]}>
-            {showDone ? 'Hide' : 'Show'} {summary.done.length} completed {showDone ? '▴' : '▾'}
+        <Pressable onPress={() => setShowDone((v) => !v)} style={{ marginTop: space.md }}>
+          <Text style={s.panelNote}>
+            {showDone ? 'Hide' : 'Show'} {summary.done.length} done {showDone ? '↑' : '↓'}
           </Text>
         </Pressable>
       )}
       {showDone &&
         summary.done.map((t) => (
           <Pressable key={t.id} style={s.cpItem} onPress={() => toggle(t.id, day)}>
-            <Avatar member={member(t.memberId)} memberId={t.memberId} size={22} />
-            <Text style={[s.cpItemText, s.itemDone]} numberOfLines={1}>{t.title}</Text>
-            <View style={s.leader} />
-            <CheckCircle done size={20} />
+            <Text style={[s.cpTime, { opacity: 0.5 }]}>{formatTime(t.time).split(' ')[0]}</Text>
+            <Text style={[s.cpItemText, { opacity: 0.5, textDecorationLine: 'line-through' }]} numberOfLines={1}>
+              {t.title}
+            </Text>
+            <CheckCircle done size={22} inverted />
           </Pressable>
         ))}
-    </Card>
+    </View>
   );
 }
 
@@ -221,46 +227,57 @@ const s = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    paddingVertical: 14,
+    gap: space.lg,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
-    borderStyle: 'dotted',
   },
-  rowDue: { backgroundColor: colors.wash, marginHorizontal: -8, paddingHorizontal: 8 },
-  timeCol: { width: 50, alignItems: 'flex-end' },
-  time: { fontFamily: fonts.display, fontSize: 18, color: colors.text, ...lining },
-  ampm: { fontFamily: fonts.displayItalic, fontSize: 11, color: colors.textDim },
-  rowBody: { flex: 1, gap: 3, borderLeftWidth: 1, borderLeftColor: colors.ink, paddingLeft: space.md },
-  byline: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.textDim },
+  timeCol: { width: 62, alignItems: 'flex-start' },
+  time: { fontFamily: fonts.display, fontSize: 28, lineHeight: 32, letterSpacing: -0.5, color: colors.text, ...lining },
+  ampm: { fontFamily: fonts.italic, fontSize: 12, color: colors.textDim, marginTop: -2 },
+  rowBody: { flex: 1, gap: 4 },
+  byRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  byline: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 2.2, textTransform: 'uppercase', color: colors.textDim },
   itemTitle: { fontFamily: fonts.body, fontSize: 17, lineHeight: 22, color: colors.text },
   itemDone: { color: colors.textFaint, textDecorationLine: 'line-through' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
-  hint: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.ink },
-  reversed: { backgroundColor: colors.ink, paddingHorizontal: 6, paddingVertical: 2 },
-  reversedText: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.bg },
-  reversedInline: { backgroundColor: colors.ink, color: colors.bg },
-  note: { fontFamily: fonts.italic, fontSize: 13, color: colors.textDim, flexShrink: 1 },
-  check: { borderWidth: 1.5, borderColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
-  cpTitle: {
-    fontFamily: fonts.display,
-    fontSize: 38,
-    lineHeight: 44,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: 6,
-  },
-  cpDeck: { fontFamily: fonts.displayItalic, fontSize: 17, lineHeight: 22, color: colors.text, textAlign: 'center', marginTop: 4 },
-  cpTally: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', alignSelf: 'stretch', gap: space.sm },
-  cpCount: { fontFamily: fonts.display, fontSize: 30, color: colors.ink, ...lining },
-  cpOf: { fontFamily: fonts.displayItalic, fontSize: 17, color: colors.textDim },
-  cpItem: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 9 },
-  cpItemText: { fontFamily: fonts.body, fontSize: 15, color: colors.text, flexShrink: 1 },
+  nowPill: { backgroundColor: colors.ink, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 2 },
+  nowPillText: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 2, textTransform: 'uppercase', color: colors.bg },
+  late: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.ink },
+  soon: { fontFamily: fonts.italic, fontSize: 14, color: colors.text },
+  note: { fontFamily: fonts.light, fontSize: 13, color: colors.textDim, flexShrink: 1 },
+  check: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
-  leader: { flex: 1, minWidth: 8, borderBottomWidth: 2, borderBottomColor: colors.textFaint, borderStyle: 'dotted', marginBottom: 4, alignSelf: 'flex-end' },
-  cpTime: { fontFamily: fonts.displayItalic, fontSize: 13, color: colors.textDim, flexShrink: 0, ...lining },
-  allDone: { alignSelf: 'flex-end', paddingVertical: 8, marginTop: 4 },
-  allDoneText: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.ink },
+  panel: { backgroundColor: colors.ink, padding: space.xl, marginVertical: space.lg },
+  panelTop: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm },
+  panelEyebrow: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.bg },
+  panelNote: { fontFamily: fonts.light, fontSize: 13, color: 'rgba(251,251,249,0.7)' },
+  cpTitle: { fontFamily: fonts.italic, fontSize: 58, lineHeight: 64, letterSpacing: -1, color: colors.bg, marginTop: space.md },
+  cpDeck: { fontFamily: fonts.light, fontSize: 17, lineHeight: 23, color: colors.bg },
+  tally: { flexDirection: 'row', alignItems: 'baseline', marginTop: space.lg },
+  cpCount: { fontFamily: fonts.display, fontSize: 64, lineHeight: 68, color: colors.bg, letterSpacing: -2, ...lining },
+  cpOf: { fontFamily: fonts.display, fontSize: 28, color: 'rgba(251,251,249,0.55)', ...lining },
+  cpReady: { fontFamily: fonts.italic, fontSize: 18, color: colors.bg, marginLeft: space.sm },
+  meter: { height: 2, backgroundColor: 'rgba(251,251,249,0.2)', marginTop: space.sm },
+  meterFill: { height: 2, backgroundColor: colors.bg },
+  cpItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(251,251,249,0.16)',
+  },
+  cpTime: { fontFamily: fonts.display, fontSize: 17, color: colors.bg, width: 40, ...lining },
+  cpItemText: { flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.bg },
+  cpWho: { fontFamily: fonts.italic, fontSize: 13, color: 'rgba(251,251,249,0.7)' },
+  allDone: {
+    alignSelf: 'flex-start',
+    marginTop: space.lg,
+    backgroundColor: colors.bg,
+    borderRadius: radius.pill,
+    paddingVertical: 11,
+    paddingHorizontal: 20,
+  },
+  allDoneText: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.ink },
 });

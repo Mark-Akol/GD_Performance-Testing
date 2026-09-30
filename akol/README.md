@@ -19,11 +19,12 @@ shows everyone's open items.
   <img src="docs/screenshots/family.png" width="200" alt="Family overview" />
 </p>
 
-**Design:** a 1920s broadsheet in black ink on newsprint. It has a blackletter masthead, stacked headlines,
-double rules, a timetable-style checklist and a boxed *Bulletin* at go time. There is no colour: each family member
-gets a monogram *seal* in its own engraving style (solid, outline, double rule, grey wash, dotted, heavy ring). Type is
-UnifrakturMaguntia, Old Standard TT and Libre Caslon Text. The earlier kente/ebony-and-gold look is in git history
-(commit `45d6d55`).
+**Design: the Dial.** Black and white only: a watch face crossed with a fashion magazine. Today's routine is drawn as
+a dial. The outer scale is the routine's window of time, and each family member is a concentric orbit in their own
+line style (solid, double, hairline, dashed, dotted, heavy). Every task is a mark at its exact minute, and you tap a
+mark to tick it off. The hand is now, and the Go-time checkpoint is a lozenge on the bezel. Go time itself is a solid
+black panel. Type is Bodoni Moda (high-contrast Didone) with Jost. Earlier looks are in git history: kente
+ebony-and-gold (`45d6d55`) and the 1920s broadsheet (`719242a`).
 
 **Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single
 self-contained page with the fonts embedded. It can be hosted anywhere. When you pick the example family on the web,

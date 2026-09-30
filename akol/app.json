@@ -7,11 +7,11 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#F3EFE4",
+    "backgroundColor": "#FBFBF9",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F3EFE4"
+      "backgroundColor": "#FBFBF9"
     },
     "ios": {
       "supportsTablet": true,
@@ -23,7 +23,7 @@
     "android": {
       "package": "app.akol.family",
       "adaptiveIcon": {
-        "backgroundColor": "#F3EFE4",
+        "backgroundColor": "#FBFBF9",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -42,7 +42,7 @@
       [
         "expo-notifications",
         {
-          "color": "#141414"
+          "color": "#0A0A0A"
         }
       ]
     ]

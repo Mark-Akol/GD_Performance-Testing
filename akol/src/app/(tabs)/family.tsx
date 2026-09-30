@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Avatar, ProgressRing } from '../../components/Avatar';
+import { Avatar } from '../../components/Avatar';
+import { FamilyRings } from '../../components/Dial';
 import { CheckpointCard } from '../../components/Checklist';
 import { Card, Dim, Display, Eyebrow, GhostButton, Screen, SectionHeader } from '../../components/ui';
 import { dayKey, formatTime, nextUp, overdue, progress, streak, tasksForDay } from '../../lib/schedule';
@@ -25,9 +26,20 @@ export default function Family() {
       <Display style={{ marginTop: 6 }}>Family</Display>
 
       <Card glow style={styles.summary}>
-        <View style={{ width: 96, height: 96, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 104, height: 104, alignItems: 'center', justifyContent: 'center' }}>
           <View style={StyleSheet.absoluteFill}>
-            <ProgressRing size={96} stroke={6} ratio={household.ratio} />
+            <FamilyRings
+              size={104}
+              rings={state.members.map((m) => ({
+                member: m,
+                memberId: m.id,
+                ratio: progress(
+                  all.filter((t) => t.memberId === m.id),
+                  state.completions,
+                  today,
+                ).ratio,
+              }))}
+            />
           </View>
           <Text style={styles.pct}>{Math.round(household.ratio * 100)}%</Text>
         </View>
@@ -107,7 +119,7 @@ export default function Family() {
 
 const styles = StyleSheet.create({
   summary: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.xl },
-  pct: { fontFamily: fonts.display, fontSize: 24, color: colors.ink, ...lining },
+  pct: { fontFamily: fonts.italic, fontSize: 20, color: colors.ink, ...lining },
   summaryTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text, ...lining },
   memberCard: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },

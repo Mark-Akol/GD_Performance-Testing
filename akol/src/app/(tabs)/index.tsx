@@ -1,18 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { Avatar } from '../../components/Avatar';
 import { Timeline } from '../../components/Checklist';
-import { DoubleRule, Fleuron, Rule } from '../../components/Rules';
-import { Card, Dim, InkButton, Screen, SectionHeader, Segmented } from '../../components/ui';
+import { Dial, dialWindow } from '../../components/Dial';
+import { Fleuron } from '../../components/Rules';
+import { Card, Dim, InkButton, Screen, SectionHeader, Segmented, tap } from '../../components/ui';
 import {
   FAMILY_ID,
   atTime,
   dayKey,
   formatTime,
   greeting,
+  minutesOfDay,
   nextUp,
   overdue,
   progress,
@@ -21,22 +23,26 @@ import {
 } from '../../lib/schedule';
 import { useAkol, useNow } from '../../lib/store';
 import type { Task } from '../../lib/types';
-import { colors, fonts, lining, space } from '../../theme';
+import { colors, fonts, lining, radius, space } from '../../theme';
 
 type Scope = 'mine' | 'family';
 
-const WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
-/** Headlines spell small numbers out, as papers of the day did. */
-const inWords = (n: number) => WORDS[n] ?? String(n);
-
-function dayOfYear(d: Date) {
-  return Math.floor((d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000);
+function groupByRoutine(tasks: Task[]) {
+  const out: { routineId: string; tasks: Task[] }[] = [];
+  for (const t of tasks) {
+    const g = out.find((x) => x.routineId === t.routineId);
+    if (g) g.tasks.push(t);
+    else out.push({ routineId: t.routineId, tasks: [t] });
+  }
+  return out;
 }
 
 export default function Today() {
-  const { state, me, member, routine, dispatch } = useAkol();
+  const { state, me, member, routine, dispatch, toggle } = useAkol();
   const now = useNow();
+  const { width } = useWindowDimensions();
   const [scope, setScope] = useState<Scope>('mine');
+  const [dialPick, setDialPick] = useState<number | null>(null);
   const today = dayKey(now);
 
   const all = useMemo(() => tasksForDay(state, now), [state, now]);
@@ -46,126 +52,142 @@ export default function Today() {
   const next = nextUp(visible, state.completions, today, now);
   const late = overdue(visible, state.completions, today, now);
   const p = progress(visible, state.completions, today);
-  const household = progress(all, state.completions, today);
 
-  // Group by routine so "School Morning" and "Wind Down" read as separate columns of the paper.
-  const groups = useMemo(() => {
-    const out: { routineId: string; tasks: Task[] }[] = [];
-    for (const t of visible) {
-      const g = out.find((x) => x.routineId === t.routineId);
-      if (g) g.tasks.push(t);
-      else out.push({ routineId: t.routineId, tasks: [t] });
-    }
-    return out;
-  }, [visible]);
+  const groups = useMemo(() => groupByRoutine(visible), [visible]);
+  const dialGroups = useMemo(() => groupByRoutine(all), [all]);
 
-  const dateLine = now
-    .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-    .toUpperCase();
-  const edition = now.getHours() < 12 ? 'Morning Edition' : now.getHours() < 17 ? 'Afternoon Edition' : 'Evening Edition';
-  const nextWho = next ? (next.task.memberId === FAMILY_ID ? 'The Whole Family' : member(next.task.memberId)?.name) : undefined;
-  const allDone = p.total > 0 && p.done === p.total;
+  // The dial shows the routine happening now, else the next one today, else the first.
+  const nowMins = minutesOfDay(now);
+  const autoIndex = Math.max(
+    0,
+    dialGroups.findIndex((g) => dialWindow(g.tasks).to >= nowMins),
+  );
+  const dialIndex = dialPick !== null && dialPick < dialGroups.length ? dialPick : autoIndex;
+  const dialGroup = dialGroups[dialIndex];
+  const dialSize = Math.min(width - 32, 400);
+
+  const dateLine = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const nextWho = next ? (next.task.memberId === FAMILY_ID ? 'Everyone' : member(next.task.memberId)?.name) : undefined;
 
   return (
     <Screen>
-      {/* Masthead */}
-      <View style={styles.ears}>
-        <View style={styles.ear}>
-          <Text style={styles.earText}>{edition}</Text>
+      <View style={styles.top}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.date}>{dateLine}</Text>
+          {state.settings.demoClock && (
+            <Pressable
+              onPress={() => dispatch({ type: 'settings', patch: { demoClock: null } })}
+              style={styles.demo}
+              accessibilityRole="button"
+            >
+              <Text style={styles.demoText}>Demo clock · tap for real time</Text>
+            </Pressable>
+          )}
         </View>
-        <Text style={styles.volume}>VOL. I · No. {dayOfYear(now)}</Text>
-        <Pressable style={[styles.ear, { alignItems: 'flex-end' }]} onPress={() => router.push('/family')}>
-          <Text style={styles.earText}>
-            {household.done} of {household.total}
-          </Text>
-          <Text style={styles.earSub}>household tally</Text>
+        <Pressable onPress={() => router.push('/settings')} accessibilityLabel="Settings">
+          <Avatar member={me} size={46} ratio={progress(mine, state.completions, today).ratio} />
         </Pressable>
       </View>
-      <Rule style={{ marginTop: space.sm }} />
-      <Text style={styles.masthead} accessibilityRole="header">
-        Akol
-      </Text>
-      <Text style={styles.motto}>“Every Task in Its Hour”</Text>
-      <DoubleRule style={{ marginTop: space.sm }} />
-      <View style={styles.dateBar}>
-        <Text style={styles.dateText}>{dateLine}</Text>
-        {state.settings.demoClock ? (
-          <Pressable onPress={() => dispatch({ type: 'settings', patch: { demoClock: null } })} accessibilityRole="button">
-            <Text style={[styles.dateText, styles.demo]}> DEMO CLOCK {formatTime(`${now.getHours()}:${now.getMinutes()}`).toUpperCase()} ✕ </Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.dateText}>{formatTime(`${now.getHours()}:${now.getMinutes()}`).toUpperCase()}</Text>
-        )}
-      </View>
-      <DoubleRule inverted />
 
-      {/* Lead story */}
-      <View style={styles.lead}>
-        <Text style={styles.kicker}>
-          {greeting(now)}, {me?.name ?? 'Reader'}
+      <Text style={styles.greeting}>{greeting(now)},</Text>
+      <Text style={styles.name}>{me?.name ?? 'there'}.</Text>
+
+      {/* The Dial */}
+      {dialGroup ? (
+        <View style={styles.dialWrap}>
+          <View style={styles.dialHead}>
+            {dialGroups.length > 1 && (
+              <Pressable
+                hitSlop={12}
+                onPress={() => {
+                  tap();
+                  setDialPick((dialIndex - 1 + dialGroups.length) % dialGroups.length);
+                }}
+              >
+                <Ionicons name="chevron-back" size={16} color={colors.ink} />
+              </Pressable>
+            )}
+            <Text style={styles.dialTitle}>{routine(dialGroup.routineId)?.name ?? 'Routine'}</Text>
+            {dialGroups.length > 1 && (
+              <Pressable
+                hitSlop={12}
+                onPress={() => {
+                  tap();
+                  setDialPick((dialIndex + 1) % dialGroups.length);
+                }}
+              >
+                <Ionicons name="chevron-forward" size={16} color={colors.ink} />
+              </Pressable>
+            )}
+          </View>
+          <Dial
+            tasks={dialGroup.tasks}
+            members={state.members}
+            completions={state.completions}
+            day={today}
+            now={now}
+            size={dialSize}
+            onToggle={(id) => toggle(id, today)}
+          />
+          <View style={styles.legend}>
+            {state.members
+              .filter((m) => dialGroup.tasks.some((t) => t.memberId === m.id))
+              .map((m) => {
+                const mp = progress(
+                  dialGroup.tasks.filter((t) => t.memberId === m.id),
+                  state.completions,
+                  today,
+                );
+                return (
+                  <Pressable key={m.id} style={styles.legendItem} onPress={() => router.push(`/member/${m.id}`)}>
+                    <Avatar member={m} size={22} />
+                    <Text style={styles.legendName}>{m.name}</Text>
+                    <Text style={styles.legendCount}>
+                      {mp.done}/{mp.total}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+          </View>
+          <Text style={styles.dialHint}>Tap a mark on the dial to tick it off</Text>
+        </View>
+      ) : null}
+
+      {/* Next up */}
+      <View style={styles.next}>
+        <Text style={styles.nextLabel}>
+          {p.total > 0 && p.done === p.total ? 'All done' : next ? (next.status === 'due' ? 'Now' : 'Next') : 'Today'}
         </Text>
-        <Text style={styles.headline}>
-          {allDone
-            ? 'All Items Checked Off; Household Ready'
+        <Text style={styles.nextTitle}>
+          {p.total > 0 && p.done === p.total
+            ? 'Every item is ticked off.'
             : next
               ? next.task.title
               : p.total
-                ? 'Nothing Further Scheduled Today'
-                : 'A Quiet Day at Home'}
+                ? 'Nothing else today.'
+                : 'A quiet day.'}
         </Text>
-        <Rule weight={1} style={styles.shortRule} />
-        <Text style={styles.deck}>
-          {allDone
-            ? 'Every item on the list is done. Well done, all.'
-            : next
-              ? `${next.status === 'due' ? 'Due now' : 'Next up'} at ${formatTime(next.task.time)}, ${relative(atTime(now, next.task.time), now)}${nextWho ? `; ${nextWho} to attend.` : '.'}`
-              : p.total
-                ? 'The day’s list has been read in full.'
-                : 'No routines run today.'}
-        </Text>
-        <Rule weight={1} style={styles.shortRule} />
-        <Text style={styles.subdeck}>
-          {p.done === 0 ? 'None' : inWords(p.done)} of {inWords(p.total).toLowerCase()} complete
-          {late.length ? ` · ${inWords(late.length)} item${late.length === 1 ? '' : 's'} late` : ''}
-        </Text>
-        <View style={styles.bar}>
-          <View style={[styles.barFill, { width: `${p.total ? (p.done / p.total) * 100 : 0}%` }]} />
+        {next && !(p.total > 0 && p.done === p.total) && (
+          <Text style={styles.nextMeta}>
+            {formatTime(next.task.time)} · {relative(atTime(now, next.task.time), now)}
+            {nextWho ? ` · ${nextWho}` : ''}
+          </Text>
+        )}
+        <View style={styles.stats}>
+          <Stat value={`${p.done}/${p.total}`} label="done" />
+          <View style={styles.statRule} />
+          <Stat value={String(late.length)} label="late" />
+          <View style={styles.statRule} />
+          <Stat value={`${Math.round(p.ratio * 100)}%`} label="complete" />
         </View>
       </View>
 
-      {/* Who's who */}
-      <SectionHeader title="The Household" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
-        {state.members.map((m) => {
-          const mp = progress(
-            all.filter((t) => t.memberId === m.id),
-            state.completions,
-            today,
-          );
-          return (
-            <Pressable key={m.id} style={styles.stripItem} onPress={() => router.push(`/member/${m.id}`)}>
-              <Avatar member={m} size={54} ratio={mp.ratio} />
-              <Text style={styles.stripName} numberOfLines={1}>
-                {m.id === me?.id ? `${m.name} (you)` : m.name}
-              </Text>
-              <Text style={styles.stripCount}>{mp.total ? `${mp.done} of ${mp.total}` : '—'}</Text>
-            </Pressable>
-          );
-        })}
-        <Pressable style={styles.stripItem} onPress={() => router.push('/member-edit')}>
-          <View style={styles.addMember}>
-            <Ionicons name="add" size={22} color={colors.ink} />
-          </View>
-          <Text style={styles.stripName}>Add</Text>
-        </Pressable>
-      </ScrollView>
-
-      <View style={{ marginTop: space.md }}>
+      <View style={{ marginTop: space.xl }}>
         <Segmented<Scope>
           value={scope}
           onChange={setScope}
           options={[
-            { value: 'mine', label: 'My checklist' },
+            { value: 'mine', label: 'My list' },
             { value: 'family', label: 'Whole family' },
           ]}
         />
@@ -173,8 +195,8 @@ export default function Today() {
 
       {groups.length === 0 ? (
         <Card style={{ marginTop: space.xl, alignItems: 'center', gap: space.md }}>
-          <Text style={styles.quiet}>☾</Text>
-          <Dim style={{ textAlign: 'center', fontFamily: fonts.italic }}>Nothing scheduled today. Enjoy the calm, or plan something.</Dim>
+          <Text style={styles.quiet}>Nothing today.</Text>
+          <Dim style={{ textAlign: 'center', fontFamily: fonts.light }}>Enjoy the calm, or plan a routine.</Dim>
           <InkButton label="Plan a routine" onPress={() => router.push('/routines')} />
         </Card>
       ) : (
@@ -184,90 +206,72 @@ export default function Today() {
             <View key={g.routineId}>
               <SectionHeader
                 title={routine(g.routineId)?.name ?? 'Routine'}
-                right={<Text style={styles.groupCount}>{gp.done} of {gp.total}</Text>}
+                right={
+                  <Text style={styles.groupCount}>
+                    {gp.done}/{gp.total}
+                  </Text>
+                }
               />
               <Timeline tasks={g.tasks} day={today} now={now} showMember={scope === 'family'} />
             </View>
           );
         })
       )}
-      <Fleuron style={{ marginTop: space.xl }} />
-      <Dim style={styles.tip}>Tap an item to tick it off · press and hold to edit</Dim>
+      <Fleuron style={{ marginTop: space.xxl, width: 120, alignSelf: 'center' }} />
+      <Dim style={styles.tip}>Tap to tick off · press and hold to edit</Dim>
     </Screen>
   );
 }
 
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  ears: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
-  ear: { flex: 1 },
-  earText: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.ink, ...lining },
-  earSub: { fontFamily: fonts.italic, fontSize: 10, color: colors.textDim },
-  volume: { fontFamily: fonts.displayMedium, fontSize: 10, letterSpacing: 1.2, color: colors.ink },
-  masthead: {
-    fontFamily: fonts.masthead,
-    fontSize: 64,
-    lineHeight: 76,
-    color: colors.ink,
-    textAlign: 'center',
+  top: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  date: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 3, textTransform: 'uppercase', color: colors.ink, marginTop: 6 },
+  demo: {
+    alignSelf: 'flex-start',
     marginTop: space.sm,
-  },
-  motto: { fontFamily: fonts.displayItalic, fontSize: 13, color: colors.inkSoft, textAlign: 'center', marginTop: -4 },
-  dateBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 5,
-    gap: space.sm,
-    flexWrap: 'wrap',
-  },
-  dateText: { fontFamily: fonts.displayMedium, fontSize: 10.5, letterSpacing: 1.2, color: colors.ink, ...lining },
-  demo: { backgroundColor: colors.ink, color: colors.bg, overflow: 'hidden' },
-  lead: { alignItems: 'center', paddingTop: space.lg, paddingBottom: space.sm },
-  kicker: {
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    letterSpacing: 2.4,
-    textTransform: 'uppercase',
-    color: colors.ink,
-    textAlign: 'center',
-  },
-  headline: {
-    fontFamily: fonts.display,
-    fontSize: 36,
-    lineHeight: 40,
-    textTransform: 'uppercase',
-    color: colors.ink,
-    textAlign: 'center',
-    marginTop: space.sm,
-    letterSpacing: 0.5,
-  },
-  shortRule: { width: 64, alignSelf: 'center', marginVertical: space.sm },
-  deck: { fontFamily: fonts.displayItalic, fontSize: 18, lineHeight: 24, color: colors.ink, textAlign: 'center', ...lining },
-  subdeck: {
-    fontFamily: fonts.displayMedium,
-    fontSize: 12,
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
-    color: colors.ink,
-    textAlign: 'center',
-  },
-  bar: { height: 5, alignSelf: 'stretch', borderWidth: 1, borderColor: colors.ink, marginTop: space.md },
-  barFill: { height: '100%', backgroundColor: colors.ink },
-  strip: { gap: space.lg, paddingBottom: space.sm, paddingRight: space.lg },
-  stripItem: { alignItems: 'center', width: 76, gap: 4 },
-  stripName: { fontFamily: fonts.body, fontSize: 13, color: colors.ink },
-  stripCount: { fontFamily: fonts.italic, fontSize: 12, color: colors.textDim, ...lining },
-  addMember: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
     borderWidth: 1,
-    borderStyle: 'dashed',
     borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
-  groupCount: { fontFamily: fonts.italic, fontSize: 13, color: colors.textDim, ...lining },
-  quiet: { fontFamily: fonts.display, fontSize: 34, color: colors.ink },
-  tip: { textAlign: 'center', fontSize: 12, marginTop: space.sm, color: colors.textFaint, fontFamily: fonts.italic },
+  demoText: { fontFamily: fonts.medium, fontSize: 10.5, letterSpacing: 1, color: colors.ink },
+  greeting: { fontFamily: fonts.italic, fontSize: 30, lineHeight: 36, color: colors.ink, marginTop: space.lg },
+  name: { fontFamily: fonts.display, fontSize: 68, lineHeight: 72, letterSpacing: -2, color: colors.ink },
+  dialWrap: { alignItems: 'center', marginTop: space.lg },
+  dialHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.xs },
+  dialTitle: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 3, textTransform: 'uppercase', color: colors.ink },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.lg, marginTop: -space.sm },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendName: { fontFamily: fonts.medium, fontSize: 13, color: colors.ink },
+  legendCount: { fontFamily: fonts.italic, fontSize: 14, color: colors.textDim, ...lining },
+  dialHint: { fontFamily: fonts.light, fontSize: 12, color: colors.textFaint, marginTop: space.sm },
+  next: { marginTop: space.xl, borderTopWidth: 1, borderTopColor: colors.ink, paddingTop: space.lg },
+  nextLabel: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 3, textTransform: 'uppercase', color: colors.ink },
+  nextTitle: { fontFamily: fonts.italic, fontSize: 36, lineHeight: 42, color: colors.ink, marginTop: space.xs },
+  nextMeta: { fontFamily: fonts.light, fontSize: 15, color: colors.inkSoft, marginTop: 4, ...lining },
+  stats: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginTop: space.xl,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.hairline,
+  },
+  stat: { flex: 1, alignItems: 'center', paddingVertical: space.md },
+  statRule: { width: 1, backgroundColor: colors.hairline },
+  statValue: { fontFamily: fonts.display, fontSize: 28, color: colors.ink, letterSpacing: -0.5, ...lining },
+  statLabel: { fontFamily: fonts.semibold, fontSize: 9, letterSpacing: 2.4, textTransform: 'uppercase', color: colors.textDim },
+  groupCount: { fontFamily: fonts.italic, fontSize: 15, color: colors.ink, ...lining },
+  quiet: { fontFamily: fonts.italic, fontSize: 30, color: colors.ink },
+  tip: { textAlign: 'center', fontSize: 12, marginTop: space.sm, color: colors.textFaint, fontFamily: fonts.light },
 });

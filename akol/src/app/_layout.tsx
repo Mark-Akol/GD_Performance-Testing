@@ -1,15 +1,11 @@
 import {
-  LibreCaslonText_400Regular,
-  LibreCaslonText_400Regular_Italic,
-  LibreCaslonText_700Bold,
-} from '@expo-google-fonts/libre-caslon-text';
-import {
-  OldStandardTT_400Regular,
-  OldStandardTT_400Regular_Italic,
-  OldStandardTT_700Bold,
+  BodoniModa_400Regular,
+  BodoniModa_400Regular_Italic,
+  BodoniModa_500Medium,
+  BodoniModa_700Bold,
   useFonts,
-} from '@expo-google-fonts/old-standard-tt';
-import { UnifrakturMaguntia_400Regular } from '@expo-google-fonts/unifrakturmaguntia';
+} from '@expo-google-fonts/bodoni-moda';
+import { Jost_300Light, Jost_400Regular, Jost_500Medium, Jost_600SemiBold } from '@expo-google-fonts/jost';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -58,13 +54,14 @@ function NotificationBridge() {
 function Gate({ children }: { children: React.ReactNode }) {
   const { ready } = useAkol();
   const [fontsLoaded] = useFonts({
-    UnifrakturMaguntia_400Regular,
-    OldStandardTT_400Regular,
-    OldStandardTT_400Regular_Italic,
-    OldStandardTT_700Bold,
-    LibreCaslonText_400Regular,
-    LibreCaslonText_400Regular_Italic,
-    LibreCaslonText_700Bold,
+    BodoniModa_400Regular,
+    BodoniModa_400Regular_Italic,
+    BodoniModa_500Medium,
+    BodoniModa_700Bold,
+    Jost_300Light,
+    Jost_400Regular,
+    Jost_500Medium,
+    Jost_600SemiBold,
   });
   if (!ready || !fontsLoaded) {
     return (
