@@ -18,8 +18,9 @@ let bundle = readFileSync(join(dist, bundlePath), 'utf8');
 // registry but are never requested.
 const USED = [
   /Ionicons\.[a-f0-9]+\.ttf$/,
-  /Inter_(400Regular|500Medium|600SemiBold)\.[a-f0-9]+\.ttf$/,
-  /PlayfairDisplay_(700Bold|500Medium|400Regular_Italic)\.[a-f0-9]+\.ttf$/,
+  /UnifrakturMaguntia_400Regular\.[a-f0-9]+\.ttf$/,
+  /OldStandardTT_(400Regular|400Regular_Italic|700Bold)\.[a-f0-9]+\.ttf$/,
+  /LibreCaslonText_(400Regular|400Regular_Italic|700Bold)\.[a-f0-9]+\.ttf$/,
   /\.png$/,
 ];
 const MIME = { '.ttf': 'font/ttf', '.png': 'image/png' };
@@ -39,9 +40,9 @@ bundle = bundle.replace(/"(\/assets\/[^"]+\.(?:ttf|png))"/g, (whole, url) => {
 bundle = bundle.replace(/<\/script/gi, '<\\/script');
 
 const page = `<title>Akol</title>
-<meta name="theme-color" content="#0E0907">
+<meta name="theme-color" content="#F3EFE4">
 <style>
-  :root { color-scheme: dark; --bg: #0E0907; }
+  :root { color-scheme: light; --bg: #F3EFE4; }
   html, body { height: 100%; background: var(--bg); }
   body { overflow: hidden; margin: 0; }
   #root { display: flex; height: 100%; flex: 1; }

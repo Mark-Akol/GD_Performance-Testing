@@ -84,7 +84,7 @@ export default function Settings() {
         title="Family members"
         right={
           <Pressable hitSlop={10} onPress={() => router.push('/member-edit')}>
-            <Ionicons name="person-add-outline" size={20} color={colors.gold} />
+            <Ionicons name="person-add-outline" size={20} color={colors.ink} />
           </Pressable>
         }
       />
@@ -144,7 +144,7 @@ export default function Settings() {
             <Dim style={{ fontSize: 12, marginTop: space.sm }}>Family checkpoints always remind everyone.</Dim>
             <GhostButton
               label="Send a test reminder"
-              icon={<Ionicons name="notifications-outline" size={16} color={colors.gold} />}
+              icon={<Ionicons name="notifications-outline" size={16} color={colors.ink} />}
               onPress={async () => {
                 await sendTestReminder();
                 setPerm(await notificationPermission());
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   memberRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
   border: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
-  memberName: { fontFamily: fonts.medium, fontSize: 16, color: colors.ivory },
+  memberName: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
   footer: {
     textAlign: 'center',
     marginTop: space.xxl,

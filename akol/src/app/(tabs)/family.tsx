@@ -88,7 +88,7 @@ export default function Family() {
       </View>
       <GhostButton
         label="Add family member"
-        icon={<Ionicons name="person-add-outline" size={16} color={colors.gold} />}
+        icon={<Ionicons name="person-add-outline" size={16} color={colors.ink} />}
         onPress={() => router.push('/member-edit')}
         style={{ marginTop: space.lg }}
       />
@@ -107,11 +107,11 @@ export default function Family() {
 
 const styles = StyleSheet.create({
   summary: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.xl },
-  pct: { fontFamily: fonts.display, fontSize: 24, color: colors.gold, ...lining },
-  summaryTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.ivory, ...lining },
+  pct: { fontFamily: fonts.display, fontSize: 24, color: colors.ink, ...lining },
+  summaryTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text, ...lining },
   memberCard: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  memberName: { fontFamily: fonts.display, fontSize: 21, color: colors.ivory },
+  memberName: { fontFamily: fonts.display, fontSize: 21, color: colors.text },
   tag: {
     fontFamily: fonts.semibold,
     fontSize: 10,
@@ -125,6 +125,6 @@ const styles = StyleSheet.create({
   },
   sub: { fontFamily: fonts.medium, fontSize: 13, color: colors.textDim },
   next: { fontFamily: fonts.body, fontSize: 13, color: colors.textFaint },
-  streak: { fontFamily: fonts.display, fontSize: 20, color: colors.gold, ...lining },
+  streak: { fontFamily: fonts.display, fontSize: 20, color: colors.ink, ...lining },
   streakLabel: { fontFamily: fonts.medium, fontSize: 9, color: colors.textDim, letterSpacing: 1, textTransform: 'uppercase' },
 });

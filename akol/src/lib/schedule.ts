@@ -27,9 +27,11 @@ export function formatTime(t: ClockTime, opts: { h24?: boolean } = {}): string {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   if (opts.h24) return toClockTime(mins);
-  const suffix = h < 12 ? 'am' : 'pm';
+  // Set the way a 1920s timetable would: "6:45 a.m.", "12:00 noon".
+  if (h === 12 && m === 0) return '12:00 noon';
+  const suffix = h < 12 ? 'a.m.' : 'p.m.';
   const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')}${suffix}`;
+  return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
 }
 
 export function dayKey(d: Date): DayKey {

@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../../components/Avatar';
-import { Card, Dim, Display, Eyebrow, GoldButton, Screen, SectionHeader } from '../../components/ui';
+import { Card, Dim, Display, Eyebrow, InkButton, InkSwitch, Screen, SectionHeader } from '../../components/ui';
 import { describeDays, formatTime, sortByTime } from '../../lib/schedule';
 import { uid } from '../../lib/seed';
 import { useAkol } from '../../lib/store';
@@ -41,12 +41,9 @@ export default function Routines() {
                   <Text style={styles.name}>{r.name}</Text>
                   <Text style={styles.days}>{describeDays(r.enabled ? r.days : [])}</Text>
                 </View>
-                <Switch
+                <InkSwitch
                   value={r.enabled}
                   onValueChange={(enabled) => dispatch({ type: 'upsertRoutine', routine: { ...r, enabled } })}
-                  trackColor={{ false: 'rgba(255,255,255,0.12)', true: colors.goldDeep }}
-                  thumbColor={r.enabled ? colors.goldPale : '#8D8A80'}
-                  {...({ activeThumbColor: colors.goldPale } as object)}
                 />
               </View>
               <View style={styles.bottom}>
@@ -74,7 +71,7 @@ export default function Routines() {
         })}
       </View>
 
-      <GoldButton
+      <InkButton
         label="Create a routine"
         icon={<Ionicons name="add" size={18} color={colors.bg} />}
         onPress={create}
@@ -86,10 +83,10 @@ export default function Routines() {
 
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  name: { fontFamily: fonts.display, fontSize: 22, color: colors.ivory },
-  days: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.gold, marginTop: 4 },
+  name: { fontFamily: fonts.display, fontSize: 22, color: colors.text },
+  days: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.ink, marginTop: 4 },
   bottom: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg },
   avatars: { flexDirection: 'row' },
   span: { flex: 1, fontFamily: fonts.medium, fontSize: 13, color: colors.textDim },
-  cp: { fontFamily: fonts.medium, fontSize: 12, color: colors.goldPale, marginTop: space.md },
+  cp: { fontFamily: fonts.medium, fontSize: 12, color: colors.inkSoft, marginTop: space.md },
 });

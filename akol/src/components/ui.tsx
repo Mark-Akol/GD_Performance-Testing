@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   Modal,
@@ -19,8 +18,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fonts, gradients, radius, space } from '../theme';
-import { KenteBand, Lozenge } from './Kente';
+import { colors, fonts, space } from '../theme';
+import { Dingbat, DoubleRule, Fleuron } from './Rules';
 
 export function tap(kind: 'light' | 'medium' | 'success' = 'light') {
   if (Platform.OS === 'web') return;
@@ -31,7 +30,7 @@ export function tap(kind: 'light' | 'medium' | 'success' = 'light') {
     ).catch(() => {});
 }
 
-/** Full-bleed ebony backdrop: a kente band at the top edge and a sunset glow beneath it. */
+/** A page of newsprint, set in a single column like a broadsheet's lead column. */
 export function Screen({
   children,
   scroll = true,
@@ -43,23 +42,15 @@ export function Screen({
 }) {
   const insets = useSafeAreaInsets();
   const pad: ViewStyle = {
-    paddingTop: insets.top + space.xl,
+    paddingTop: insets.top + space.lg,
     paddingBottom: insets.bottom + 110,
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.lg + 2,
     width: '100%',
     maxWidth: 720,
     alignSelf: 'center',
   };
   return (
     <View style={styles.fill}>
-      <LinearGradient colors={gradients.page} style={StyleSheet.absoluteFill} />
-      <LinearGradient
-        colors={gradients.glow}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.glow}
-        pointerEvents="none"
-      />
       {scroll ? (
         <ScrollView contentContainerStyle={[pad, contentStyle]} showsVerticalScrollIndicator={false}>
           {children}
@@ -67,7 +58,6 @@ export function Screen({
       ) : (
         <View style={[styles.fill, pad, contentStyle]}>{children}</View>
       )}
-      <KenteBand height={6} repeats={10} style={[styles.topBand, { top: 0, height: insets.top + 6, justifyContent: 'flex-end' }]} />
     </View>
   );
 }
@@ -80,7 +70,7 @@ export const Body = ({ style, ...p }: TxtProps) => <Text {...p} style={[styles.b
 export const Dim = ({ style, ...p }: TxtProps) => <Text {...p} style={[styles.body, styles.dim, style]} />;
 export const Eyebrow = ({ style, ...p }: TxtProps) => <Text {...p} style={[styles.eyebrow, style]} />;
 
-/** Lacquered card with a gilt hairline. */
+/** A boxed notice, ruled in ink. `glow` gives it the heavy double border of a bulletin box. */
 export function Card({
   children,
   style,
@@ -92,15 +82,17 @@ export function Card({
   glow?: boolean;
   onPress?: () => void;
 }) {
-  const inner = (
-    <LinearGradient
-      colors={gradients.card}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.card, glow && styles.cardGlow, style]}
-    >
-      {children}
-    </LinearGradient>
+  // A bulletin box's margins belong on its outer (heavy) border; everything else styles the inner box.
+  const flat = StyleSheet.flatten(style) ?? {};
+  const outer: ViewStyle = {};
+  const rest: ViewStyle = {};
+  for (const [k, v] of Object.entries(flat)) (k.startsWith('margin') ? outer : rest)[k as keyof ViewStyle] = v as never;
+  const inner = glow ? (
+    <View style={[styles.bulletinOuter, outer]}>
+      <View style={[styles.card, styles.bulletinInner, rest]}>{children}</View>
+    </View>
+  ) : (
+    <View style={[styles.card, style]}>{children}</View>
   );
   if (!onPress) return inner;
   return (
@@ -109,14 +101,15 @@ export function Card({
         tap();
         onPress();
       }}
-      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
     >
       {inner}
     </Pressable>
   );
 }
 
-export function GoldButton({
+/** Reversed type: paper letters on a solid ink block. */
+export function InkButton({
   label,
   onPress,
   icon,
@@ -137,12 +130,10 @@ export function GoldButton({
         tap('medium');
         onPress();
       }}
-      style={({ pressed }) => [{ opacity: disabled ? 0.4 : pressed ? 0.85 : 1 }, style]}
+      style={({ pressed }) => [styles.inkBtn, { opacity: disabled ? 0.35 : pressed ? 0.8 : 1 }, style]}
     >
-      <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.goldBtn}>
-        {icon}
-        <Text style={styles.goldBtnText}>{label}</Text>
-      </LinearGradient>
+      {icon}
+      <Text style={styles.inkBtnText}>{label}</Text>
     </Pressable>
   );
 }
@@ -151,16 +142,16 @@ export function GhostButton({
   label,
   onPress,
   icon,
-  tone = 'gold',
+  tone = 'ink',
   style,
 }: {
   label: string;
   onPress: () => void;
   icon?: ReactNode;
-  tone?: 'gold' | 'danger' | 'plain';
+  tone?: 'ink' | 'danger' | 'plain';
   style?: StyleProp<ViewStyle>;
 }) {
-  const c = tone === 'danger' ? colors.danger : tone === 'plain' ? colors.textDim : colors.gold;
+  const c = tone === 'plain' ? colors.textDim : colors.ink;
   return (
     <Pressable
       accessibilityRole="button"
@@ -168,10 +159,14 @@ export function GhostButton({
         tap();
         onPress();
       }}
-      style={({ pressed }) => [styles.ghostBtn, { borderColor: c + '66', opacity: pressed ? 0.7 : 1 }, style]}
+      style={({ pressed }) => [
+        styles.ghostBtn,
+        { borderColor: tone === 'plain' ? colors.hairline : colors.ink, opacity: pressed ? 0.6 : 1 },
+        style,
+      ]}
     >
       {icon}
-      <Text style={[styles.ghostBtnText, { color: c }]}>{label}</Text>
+      <Text style={[styles.ghostBtnText, { color: c }, tone === 'danger' && { fontFamily: fonts.italic }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -180,12 +175,12 @@ export function Chip({
   label,
   active,
   onPress,
-  color = colors.gold,
   left,
 }: {
   label: string;
   active?: boolean;
   onPress?: () => void;
+  /** Ignored in the monochrome theme; kept so callers don't change. */
   color?: string;
   left?: ReactNode;
 }) {
@@ -195,13 +190,10 @@ export function Chip({
         tap();
         onPress?.();
       }}
-      style={[
-        styles.chip,
-        active ? { backgroundColor: color + '26', borderColor: color } : { borderColor: colors.hairline },
-      ]}
+      style={[styles.chip, active ? styles.chipActive : null]}
     >
       {left}
-      <Text style={[styles.chipText, { color: active ? color : colors.textDim }]}>{label}</Text>
+      <Text style={[styles.chipText, active && { color: colors.bg }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -217,7 +209,7 @@ export function Segmented<T extends string>({
 }) {
   return (
     <View style={styles.segment}>
-      {options.map((o) => {
+      {options.map((o, i) => {
         const active = o.value === value;
         return (
           <Pressable
@@ -226,17 +218,9 @@ export function Segmented<T extends string>({
               tap();
               onChange(o.value);
             }}
-            style={styles.segmentItem}
+            style={[styles.segmentItem, i > 0 && styles.segmentDivider, active && { backgroundColor: colors.ink }]}
           >
-            {active ? (
-              <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.segmentActive}>
-                <Text style={[styles.segmentText, { color: colors.bg }]}>{o.label}</Text>
-              </LinearGradient>
-            ) : (
-              <View style={styles.segmentActive}>
-                <Text style={styles.segmentText}>{o.label}</Text>
-              </View>
-            )}
+            <Text style={[styles.segmentText, active && { color: colors.bg }]}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -244,27 +228,24 @@ export function Segmented<T extends string>({
   );
 }
 
+/** A section head as a newspaper sets it: a rule, then a small-capital label. */
 export function SectionHeader({ title, right }: { title: string; right?: ReactNode }) {
   return (
-    <View style={styles.sectionHeader}>
-      <View style={styles.row}>
-        <Lozenge size={7} />
-        <Eyebrow>{title}</Eyebrow>
+    <View style={styles.sectionWrap}>
+      <DoubleRule />
+      <View style={styles.sectionHeader}>
+        <View style={styles.row}>
+          <Dingbat />
+          <Eyebrow>{title}</Eyebrow>
+        </View>
+        {right}
       </View>
-      {right}
     </View>
   );
 }
 
 export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
-  return (
-    <LinearGradient
-      colors={['rgba(242,182,50,0)', 'rgba(242,182,50,0.4)', 'rgba(242,182,50,0)']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={[{ height: StyleSheet.hairlineWidth * 2, marginVertical: space.lg }, style]}
-    />
-  );
+  return <Fleuron style={[{ marginVertical: space.xl }, style]} />;
 }
 
 interface ConfirmRequest {
@@ -299,16 +280,15 @@ export function ConfirmHost() {
     <Modal visible={!!req} transparent animationType="fade" onRequestClose={close}>
       <Pressable style={styles.scrim} onPress={close}>
         <Pressable style={styles.dialog} onPress={() => {}}>
-          <KenteBand height={6} repeats={4} />
           <View style={styles.dialogBody}>
-            <Lozenge size={10} />
+            <Eyebrow>Notice</Eyebrow>
+            <DoubleRule />
             <Text style={styles.dialogTitle}>{req?.title}</Text>
-            <Dim style={{ textAlign: 'center' }}>{req?.message}</Dim>
+            <Text style={[styles.body, { textAlign: 'center', fontFamily: fonts.italic }]}>{req?.message}</Text>
             <View style={styles.dialogActions}>
               <GhostButton label="Cancel" tone="plain" onPress={close} style={{ flex: 1 }} />
-              <GhostButton
+              <InkButton
                 label={req?.actionLabel ?? 'OK'}
-                tone="danger"
                 onPress={() => {
                   const r = req;
                   close();
@@ -324,13 +304,14 @@ export function ConfirmHost() {
   );
 }
 
+/** An input set like a form in the classifieds: a label and an inked baseline. */
 export function Field({ label, style, ...props }: TextInputProps & { label: string }) {
   return (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: 4 }}>
       <Eyebrow style={{ color: colors.textDim, fontSize: 10 }}>{label}</Eyebrow>
       <TextInput
         placeholderTextColor={colors.textFaint}
-        selectionColor={colors.gold}
+        selectionColor={colors.ink}
         {...props}
         style={[styles.field, style]}
       />
@@ -352,128 +333,115 @@ export function ToggleRow({
   return (
     <View style={styles.toggleRow}>
       <View style={{ flex: 1, gap: 2 }}>
-        <Body style={{ fontFamily: fonts.medium }}>{label}</Body>
-        {hint && <Dim style={{ fontSize: 13, lineHeight: 18 }}>{hint}</Dim>}
+        <Body style={{ fontFamily: fonts.semibold }}>{label}</Body>
+        {hint && <Dim style={{ fontSize: 13, lineHeight: 18, fontFamily: fonts.italic }}>{hint}</Dim>}
       </View>
-      <Switch
-        value={value}
-        onValueChange={(v) => {
-          tap();
-          onChange(v);
-        }}
-        trackColor={{ false: 'rgba(255,255,255,0.12)', true: colors.goldDeep }}
-        thumbColor={value ? colors.goldPale : '#8D8A80'}
-        // react-native-web ignores thumbColor for the "on" state.
-        {...({ activeThumbColor: colors.goldPale } as object)}
-        ios_backgroundColor="rgba(255,255,255,0.12)"
-      />
+      <InkSwitch value={value} onValueChange={onChange} />
     </View>
   );
 }
 
+export function InkSwitch({ value, onValueChange }: { value: boolean; onValueChange: (v: boolean) => void }) {
+  return (
+    <Switch
+      value={value}
+      onValueChange={(v) => {
+        tap();
+        onValueChange(v);
+      }}
+      trackColor={{ false: 'rgba(20,20,20,0.15)', true: colors.ink }}
+      thumbColor={colors.bg}
+      // react-native-web ignores thumbColor for the "on" state.
+      {...({ activeThumbColor: colors.bg } as object)}
+      ios_backgroundColor="rgba(20,20,20,0.15)"
+    />
+  );
+}
+
 export const styles = StyleSheet.create({
-  field: {
-    fontFamily: fonts.body,
-    fontSize: 16,
-    color: colors.ivory,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: radius.md,
-    paddingHorizontal: space.lg,
-    paddingVertical: 14,
-  },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
   fill: { flex: 1, backgroundColor: colors.bg },
-  glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 380 },
-  topBand: { position: 'absolute', left: 0, right: 0, backgroundColor: colors.bg },
-  scrim: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: space.xl },
-  dialog: {
-    width: '100%',
-    maxWidth: 380,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.bgRaised,
-    borderWidth: 1,
-    borderColor: colors.hairlineStrong,
-  },
-  dialogBody: { padding: space.xl, alignItems: 'center', gap: space.md },
-  dialogTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.ivory, textAlign: 'center' },
-  dialogActions: { flexDirection: 'row', gap: space.md, marginTop: space.sm, alignSelf: 'stretch' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  display: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, color: colors.ivory, letterSpacing: 0.2, fontVariant: ['lining-nums'] },
-  title: { fontFamily: fonts.displayMedium, fontSize: 21, lineHeight: 27, color: colors.ivory },
-  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.text },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  display: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, color: colors.text, ...{ fontVariant: ['lining-nums'] } },
+  title: { fontFamily: fonts.display, fontSize: 21, lineHeight: 27, color: colors.text },
+  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.text },
   dim: { color: colors.textDim },
   eyebrow: {
     fontFamily: fonts.semibold,
     fontSize: 11,
-    letterSpacing: 2.2,
+    letterSpacing: 2,
     textTransform: 'uppercase',
-    color: colors.gold,
+    color: colors.ink,
   },
   card: {
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    borderColor: colors.hairline,
+    borderWidth: 1,
+    borderColor: colors.ink,
     padding: space.lg,
-    overflow: 'hidden',
+    backgroundColor: colors.card,
   },
-  cardGlow: {
-    borderColor: colors.hairlineStrong,
-    shadowColor: colors.gold,
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  goldBtn: {
+  bulletinOuter: { borderWidth: 3, borderColor: colors.ink, padding: 2, backgroundColor: colors.card },
+  bulletinInner: { borderWidth: 1 },
+  inkBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
     paddingVertical: 15,
     paddingHorizontal: space.xl,
-    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
   },
-  goldBtnText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.bg, letterSpacing: 0.4 },
+  inkBtnText: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.bg,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   ghostBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
-    paddingVertical: 12,
+    paddingVertical: 13,
     paddingHorizontal: space.lg,
-    borderRadius: radius.pill,
     borderWidth: 1,
   },
-  ghostBtnText: { fontFamily: fonts.medium, fontSize: 14, letterSpacing: 0.3 },
+  ghostBtnText: { fontFamily: fonts.semibold, fontSize: 13, letterSpacing: 1.2, textTransform: 'uppercase' },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: radius.pill,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
     borderWidth: 1,
+    borderColor: colors.ink,
   },
-  chipText: { fontFamily: fonts.medium, fontSize: 13 },
-  segment: {
-    flexDirection: 'row',
-    padding: 4,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+  chipActive: { backgroundColor: colors.ink },
+  chipText: { fontFamily: fonts.body, fontSize: 14, color: colors.ink },
+  segment: { flexDirection: 'row', borderWidth: 1, borderColor: colors.ink },
+  segmentItem: { flex: 1, paddingVertical: 11, alignItems: 'center' },
+  segmentDivider: { borderLeftWidth: 1, borderLeftColor: colors.ink },
+  segmentText: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: colors.ink,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
   },
-  segmentItem: { flex: 1 },
-  segmentActive: { borderRadius: radius.pill, paddingVertical: 10, alignItems: 'center' },
-  segmentText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDim, letterSpacing: 0.3 },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: space.xl,
-    marginBottom: space.md,
+  sectionWrap: { marginTop: space.xl, marginBottom: space.md, gap: 8 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  scrim: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: space.xl },
+  dialog: { width: '100%', maxWidth: 380, backgroundColor: colors.bg, borderWidth: 3, borderColor: colors.ink, padding: 3 },
+  dialogBody: { padding: space.xl, alignItems: 'center', gap: space.md, borderWidth: 1, borderColor: colors.ink },
+  dialogTitle: { fontFamily: fonts.display, fontSize: 24, color: colors.text, textAlign: 'center' },
+  dialogActions: { flexDirection: 'row', gap: space.md, marginTop: space.sm, alignSelf: 'stretch' },
+  field: {
+    fontFamily: fonts.body,
+    fontSize: 17,
+    color: colors.text,
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.ink,
+    paddingHorizontal: 2,
+    paddingVertical: 10,
   },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
 });

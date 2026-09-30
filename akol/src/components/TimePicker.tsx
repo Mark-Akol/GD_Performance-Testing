@@ -77,11 +77,11 @@ function Column({
   return (
     <View style={styles.col}>
       <Pressable accessibilityLabel={`Increase ${a11y}`} onPress={onUp} onLongPress={onFineUp} hitSlop={8} style={styles.arrow}>
-        <Ionicons name="chevron-up" size={22} color={colors.gold} />
+        <Ionicons name="chevron-up" size={22} color={colors.ink} />
       </Pressable>
       <Text style={styles.value}>{label}</Text>
       <Pressable accessibilityLabel={`Decrease ${a11y}`} onPress={onDown} onLongPress={onFineDown} hitSlop={8} style={styles.arrow}>
-        <Ionicons name="chevron-down" size={22} color={colors.gold} />
+        <Ionicons name="chevron-down" size={22} color={colors.ink} />
       </Pressable>
     </View>
   );
@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
   },
   col: { alignItems: 'center', width: 76 },
   arrow: { padding: 6 },
-  value: { fontFamily: fonts.display, fontSize: 48, color: colors.ivory, lineHeight: 58, ...lining },
-  colon: { fontFamily: fonts.display, fontSize: 44, color: colors.gold, marginBottom: 6 },
+  value: { fontFamily: fonts.display, fontSize: 48, color: colors.text, lineHeight: 58, ...lining },
+  colon: { fontFamily: fonts.display, fontSize: 44, color: colors.ink, marginBottom: 6 },
   ampm: { marginLeft: space.md, gap: space.sm },
   ampmBtn: {
     paddingHorizontal: 14,
@@ -111,6 +111,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hairline,
   },
-  ampmActive: { backgroundColor: colors.gold, borderColor: colors.gold },
+  ampmActive: { backgroundColor: colors.ink, borderColor: colors.ink },
   ampmText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDim, letterSpacing: 1 },
 });

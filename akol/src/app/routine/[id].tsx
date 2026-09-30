@@ -12,7 +12,7 @@ import {
   Eyebrow,
   Field,
   GhostButton,
-  GoldButton,
+  InkButton,
   Screen,
   SectionHeader,
   ToggleRow,
@@ -81,7 +81,7 @@ export default function RoutineEditor() {
         title={`Timeline · ${tasks.length}`}
         right={
           <Pressable hitSlop={10} onPress={() => router.push({ pathname: '/task', params: { routineId: r.id } })}>
-            <Ionicons name="add-circle-outline" size={24} color={colors.gold} />
+            <Ionicons name="add-circle-outline" size={24} color={colors.ink} />
           </Pressable>
         }
       />
@@ -105,7 +105,7 @@ export default function RoutineEditor() {
                 <Avatar member={m} memberId={t.memberId} size={28} />
               )}
               <View style={{ flex: 1 }}>
-                <Text style={[styles.title, t.checkpoint && { color: colors.gold }]} numberOfLines={1}>
+                <Text style={[styles.title, t.checkpoint && { color: colors.ink }]} numberOfLines={1}>
                   {t.title}
                 </Text>
                 <Text style={[styles.who, { color: j.light }]}>
@@ -120,14 +120,14 @@ export default function RoutineEditor() {
       </Card>
 
       <View style={{ gap: space.md, marginTop: space.xl }}>
-        <GoldButton
+        <InkButton
           label="Add an item"
           icon={<Ionicons name="add" size={18} color={colors.bg} />}
           onPress={() => router.push({ pathname: '/task', params: { routineId: r.id } })}
         />
         <GhostButton
           label="Add a checkpoint"
-          icon={<Ionicons name="flag-outline" size={16} color={colors.gold} />}
+          icon={<Ionicons name="flag-outline" size={16} color={colors.ink} />}
           onPress={() => router.push({ pathname: '/task', params: { routineId: r.id, checkpoint: '1' } })}
         />
         <GhostButton
@@ -150,14 +150,14 @@ const styles = StyleSheet.create({
   days: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   item: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 14, paddingHorizontal: space.lg },
   itemBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
-  time: { width: 66, fontFamily: fonts.displayMedium, fontSize: 15, color: colors.ivory, ...lining },
-  title: { fontFamily: fonts.medium, fontSize: 15, color: colors.ivory },
+  time: { width: 66, fontFamily: fonts.displayMedium, fontSize: 15, color: colors.text, ...lining },
+  title: { fontFamily: fonts.medium, fontSize: 15, color: colors.text },
   who: { fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
   cpBadge: {
     width: 28,
     height: 28,
     borderRadius: radius.pill,
-    backgroundColor: colors.gold,
+    backgroundColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },

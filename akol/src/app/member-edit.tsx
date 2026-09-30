@@ -10,7 +10,7 @@ import {
   Eyebrow,
   Field,
   GhostButton,
-  GoldButton,
+  InkButton,
   Screen,
   SectionHeader,
   ToggleRow,
@@ -20,9 +20,10 @@ import {
 import { uid } from '../lib/seed';
 import { useAkol } from '../lib/store';
 import type { Member, MemberRole } from '../lib/types';
-import { JEWEL_KEYS, colors, jewels, radius, space } from '../theme';
+import { JEWEL_KEYS, colors, fonts, jewels, radius, space } from '../theme';
 
-const EMOJI = ['👑', '🦁', '🦊', '🐻', '🐼', '🦄', '🐯', '🐬', '🦉', '🌸', '⭐️', '🚀', '⚽️', '🎨', '🎧', '🌙'];
+/** Printer's ornaments and chess pieces: they print in plain ink, unlike emoji. */
+const EMOJI = ['♛', '♚', '♞', '♜', '♝', '★', '✦', '❦', '☙', '✠', '☾', '✿', '♣', '♠', '♥', '♦'];
 const ROLES: { value: MemberRole; label: string }[] = [
   { value: 'parent', label: 'Parent' },
   { value: 'child', label: 'Child' },
@@ -40,7 +41,7 @@ export default function MemberEditor() {
         name: '',
         role: 'child',
         color: JEWEL_KEYS.find((k) => !state.members.some((m) => m.color === k)) ?? 'kente',
-        emoji: EMOJI[(state.members.length + 1) % EMOJI.length],
+        emoji: undefined,
       },
   );
   const [isMe, setIsMe] = useState(state.settings.meId === draft.id);
@@ -72,14 +73,14 @@ export default function MemberEditor() {
         ))}
       </View>
 
-      <SectionHeader title="Jewel" />
+      <SectionHeader title="Seal" />
       <View style={styles.wrap}>
         {JEWEL_KEYS.map((k) => (
-          <Chip key={k} label={jewels[k].name} color={jewels[k].base} active={draft.color === k} onPress={() => set({ color: k })} left={<View style={[styles.dot, { backgroundColor: jewels[k].base }]} />} />
+          <Chip key={k} label={jewels[k].name} color={jewels[k].base} active={draft.color === k} onPress={() => set({ color: k })} left={<Avatar member={{ ...draft, color: k, emoji: draft.emoji, name: draft.name || '?' }} size={20} />} />
         ))}
       </View>
 
-      <SectionHeader title="Emblem" />
+      <SectionHeader title="Monogram" />
       <View style={styles.wrap}>
         {EMOJI.map((e) => (
           <Pressable
@@ -88,16 +89,16 @@ export default function MemberEditor() {
               tap();
               set({ emoji: e });
             }}
-            style={[styles.emoji, draft.emoji === e && { borderColor: jewels[draft.color].base, backgroundColor: jewels[draft.color].base + '22' }]}
+            style={[styles.emoji, draft.emoji === e && { backgroundColor: colors.ink }]}
           >
-            <Text style={{ fontSize: 24 }}>{e}</Text>
+            <Text style={{ fontSize: 24, fontFamily: fonts.display, color: draft.emoji === e ? colors.bg : colors.ink }}>{e}</Text>
           </Pressable>
         ))}
         <Pressable
           onPress={() => set({ emoji: undefined })}
-          style={[styles.emoji, !draft.emoji && { borderColor: colors.gold }]}
+          style={[styles.emoji, !draft.emoji && { borderColor: colors.ink }]}
         >
-          <Text style={{ fontSize: 16, color: colors.textDim }}>Aa</Text>
+          <Text style={{ fontSize: 16, fontFamily: fonts.display, color: colors.ink }}>Aa</Text>
         </Pressable>
       </View>
 
@@ -106,7 +107,7 @@ export default function MemberEditor() {
       </View>
 
       <View style={{ gap: space.md, marginTop: space.xl }}>
-        <GoldButton label={existing ? 'Save' : 'Add to the family'} onPress={save} disabled={!draft.name.trim()} />
+        <InkButton label={existing ? 'Save' : 'Add to the family'} onPress={save} disabled={!draft.name.trim()} />
         {existing && state.members.length > 1 && (
           <GhostButton
             label={`Remove ${existing.name}`}

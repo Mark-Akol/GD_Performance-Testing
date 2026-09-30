@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { Redirect, Tabs } from 'expo-router';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { KenteBand } from '../../components/Kente';
+import { DoubleRule } from '../../components/Rules';
 import { useAkol } from '../../lib/store';
 import { colors, fonts } from '../../theme';
 
@@ -24,23 +23,19 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.gold,
+        tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.textFaint,
-        tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase' },
+        sceneStyle: { backgroundColor: colors.bg },
+        tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 1.4, textTransform: 'uppercase' },
         tabBarStyle: {
           position: 'absolute',
           borderTopWidth: 0,
-          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(14,9,7,0.97)',
+          backgroundColor: colors.bg,
           elevation: 0,
         },
         tabBarBackground: () => (
-          <View style={StyleSheet.absoluteFill}>
-            {Platform.OS === 'ios' ? (
-              <BlurView tint="dark" intensity={60} style={StyleSheet.absoluteFill} />
-            ) : (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(14,9,7,0.97)' }]} />
-            )}
-            <KenteBand height={4} repeats={8} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]}>
+            <DoubleRule inverted />
           </View>
         ),
       }}

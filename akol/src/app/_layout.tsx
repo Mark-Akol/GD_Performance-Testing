@@ -1,9 +1,15 @@
-import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, useFonts } from '@expo-google-fonts/inter';
 import {
-  PlayfairDisplay_400Regular_Italic,
-  PlayfairDisplay_500Medium,
-  PlayfairDisplay_700Bold,
-} from '@expo-google-fonts/playfair-display';
+  LibreCaslonText_400Regular,
+  LibreCaslonText_400Regular_Italic,
+  LibreCaslonText_700Bold,
+} from '@expo-google-fonts/libre-caslon-text';
+import {
+  OldStandardTT_400Regular,
+  OldStandardTT_400Regular_Italic,
+  OldStandardTT_700Bold,
+  useFonts,
+} from '@expo-google-fonts/old-standard-tt';
+import { UnifrakturMaguntia_400Regular } from '@expo-google-fonts/unifrakturmaguntia';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -52,17 +58,18 @@ function NotificationBridge() {
 function Gate({ children }: { children: React.ReactNode }) {
   const { ready } = useAkol();
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    PlayfairDisplay_700Bold,
-    PlayfairDisplay_500Medium,
-    PlayfairDisplay_400Regular_Italic,
+    UnifrakturMaguntia_400Regular,
+    OldStandardTT_400Regular,
+    OldStandardTT_400Regular_Italic,
+    OldStandardTT_700Bold,
+    LibreCaslonText_400Regular,
+    LibreCaslonText_400Regular_Italic,
+    LibreCaslonText_700Bold,
   });
   if (!ready || !fontsLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={colors.gold} />
+        <ActivityIndicator color={colors.ink} />
       </View>
     );
   }
@@ -73,7 +80,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AkolProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <Gate>
           {/* Inside the gate so a tapped reminder can navigate once the router is mounted. */}
           <NotificationBridge />

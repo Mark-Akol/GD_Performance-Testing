@@ -1,15 +1,15 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { KenteBand, Lozenge } from '../components/Kente';
-import { Dim, Divider, Field, GhostButton, GoldButton, Screen } from '../components/ui';
+import { DoubleRule, Fleuron, Rule } from '../components/Rules';
+import { Dim, Field, GhostButton, InkButton, Screen } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
 import { exampleFamily, freshFamily } from '../lib/seed';
 import { useAkol } from '../lib/store';
-import { colors, fonts, gradients, space } from '../theme';
+import { colors, fonts, space } from '../theme';
 
+/** First run, set as the front page of a first edition. */
 export default function Welcome() {
   const { dispatch } = useAkol();
   const [name, setName] = useState('');
@@ -29,84 +29,88 @@ export default function Welcome() {
 
   return (
     <Screen contentStyle={{ paddingBottom: 60 }}>
-      <View style={styles.hero}>
-        <View style={styles.crestFrame}>
-          <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.crest}>
-            <View style={styles.crestInner}>
-              <Text style={styles.crestText}>A</Text>
-            </View>
-          </LinearGradient>
-        </View>
-        <Text style={styles.word}>AKOL</Text>
-        <View style={styles.tagRow}>
-          <Lozenge size={6} />
-          <Text style={styles.tag}>The family, on time.</Text>
-          <Lozenge size={6} />
-        </View>
-        <KenteBand height={10} repeats={4} style={styles.heroBand} />
+      <View style={styles.ears}>
+        <Text style={styles.ear}>First Edition</Text>
+        <Text style={styles.ear}>Vol. I · No. 1</Text>
+      </View>
+      <Rule style={{ marginTop: space.sm }} />
+      <Text style={styles.masthead}>Akol</Text>
+      <Text style={styles.motto}>“Every Task in Its Hour”</Text>
+      <DoubleRule style={{ marginTop: space.sm }} />
+      <Text style={styles.dateline}>PRIVATE BY DESIGN · STORED ON YOUR DEVICE · NO ACCOUNT REQUIRED</Text>
+      <DoubleRule inverted />
+
+      <Text style={styles.extra}>Extra!</Text>
+      <Text style={styles.headline}>Family Now Runs to the Minute</Text>
+      <Rule style={styles.shortRule} />
+      <Text style={styles.deck}>A Checklist for Every Member, and a Bulletin at Go Time Asking Whether All Is Done</Text>
+      <Rule style={styles.shortRule} />
+
+      <View style={styles.columns}>
+        <Column head="Lists for All" body="Your list, the children’s lists, and the whole household at a glance." />
+        <View style={styles.gutter} />
+        <Column head="To the Minute" body="6:45 pack lunch. 6:55 bags in the car. 7:30 go time." />
+        <View style={styles.gutter} />
+        <Column head="The Bulletin" body="At go time Akol asks if everything is done, and names what isn’t." />
       </View>
 
-      <Divider />
+      <Fleuron style={{ marginVertical: space.xl }} />
 
-      <View style={{ gap: space.lg }}>
-        <Feature icon="✦" title="A checklist for everyone" body="Your list, your children's lists, and the whole family at a glance." />
-        <Feature icon="◷" title="Reminders to the minute" body="6:45 pack lunch. 6:55 bags in the car. 7:30 go time." />
-        <Feature icon="⚑" title="Checkpoints" body="At go time, Akol asks: is everything done? And shows exactly what isn't." />
-      </View>
-
-      <Divider />
-
-      <Field label="Your name" value={name} onChangeText={setName} placeholder="Mark" returnKeyType="done" />
+      <Field label="Your name, for the masthead" value={name} onChangeText={setName} placeholder="Mark" returnKeyType="done" />
       <View style={{ gap: space.md, marginTop: space.xl }}>
-        <GoldButton label="Begin with the school-morning example" onPress={() => start(true)} />
+        <InkButton label="Begin with the example family" onPress={() => start(true)} />
         <GhostButton label="Start from a blank page" onPress={() => start(false)} />
       </View>
-      <Dim style={styles.fine}>Private by design · stored on your device</Dim>
+      <Dim style={styles.fine}>Set in Old Standard and Libre Caslon. Printed on your phone.</Dim>
     </Screen>
   );
 }
 
-function Feature({ icon, title, body }: { icon: string; title: string; body: string }) {
+function Column({ head, body }: { head: string; body: string }) {
   return (
-    <View style={styles.feature}>
-      <Text style={styles.featureIcon}>{icon}</Text>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.featureTitle}>{title}</Text>
-        <Dim style={{ fontSize: 14 }}>{body}</Dim>
-      </View>
+    <View style={styles.column}>
+      <Text style={styles.columnHead}>{head}</Text>
+      <Text style={styles.columnBody}>{body}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: 'center', marginTop: space.xxl + space.lg },
-  crestFrame: {
-    padding: 6,
-    borderRadius: 34,
-    borderWidth: 1,
-    borderColor: colors.hairlineStrong,
-    transform: [{ rotate: '45deg' }],
-    shadowColor: '#E0661F',
-    shadowOpacity: 0.55,
-    shadowRadius: 36,
-    elevation: 12,
+  ears: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.md },
+  ear: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.ink },
+  masthead: { fontFamily: fonts.masthead, fontSize: 88, lineHeight: 100, color: colors.ink, textAlign: 'center', marginTop: space.md },
+  motto: { fontFamily: fonts.displayItalic, fontSize: 15, color: colors.inkSoft, textAlign: 'center', marginTop: -6 },
+  dateline: {
+    fontFamily: fonts.displayMedium,
+    fontSize: 9.5,
+    letterSpacing: 1.2,
+    color: colors.ink,
+    textAlign: 'center',
+    paddingVertical: 5,
   },
-  crest: { width: 96, height: 96, borderRadius: 28, padding: 8 },
-  crestInner: {
-    flex: 1,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(14,9,7,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  extra: { fontFamily: fonts.masthead, fontSize: 30, color: colors.ink, textAlign: 'center', marginTop: space.xl },
+  headline: {
+    fontFamily: fonts.display,
+    fontSize: 40,
+    lineHeight: 44,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    color: colors.ink,
+    marginTop: space.xs,
   },
-  crestText: { fontFamily: fonts.display, fontSize: 42, color: colors.bg, transform: [{ rotate: '-45deg' }] },
-  tagRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.sm },
-  heroBand: { marginTop: space.xl, width: 200, borderRadius: 2 },
-  word: { fontFamily: fonts.display, fontSize: 44, letterSpacing: 14, color: colors.ivory, marginTop: space.xxl, paddingLeft: 14 },
-  tag: { fontFamily: fonts.displayItalic, fontSize: 18, color: colors.gold },
-  feature: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
-  featureIcon: { fontSize: 20, color: colors.gold, width: 26, textAlign: 'center', marginTop: 2 },
-  featureTitle: { fontFamily: fonts.displayMedium, fontSize: 18, color: colors.ivory },
-  fine: { textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint },
+  shortRule: { width: 64, alignSelf: 'center', marginVertical: space.sm },
+  deck: { fontFamily: fonts.displayItalic, fontSize: 18, lineHeight: 24, textAlign: 'center', color: colors.ink },
+  columns: { flexDirection: 'row', marginTop: space.lg },
+  gutter: { width: 1, backgroundColor: colors.ink, marginHorizontal: space.sm },
+  column: { flex: 1, gap: 4 },
+  columnHead: {
+    fontFamily: fonts.display,
+    fontSize: 12.5,
+    lineHeight: 15,
+    textTransform: 'uppercase',
+    color: colors.ink,
+    textAlign: 'center',
+  },
+  columnBody: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.text, textAlign: 'center' },
+  fine: { textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint, fontFamily: fonts.italic },
 });

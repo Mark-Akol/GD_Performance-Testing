@@ -19,12 +19,15 @@ shows everyone's open items.
   <img src="docs/screenshots/family.png" width="200" alt="Family overview" />
 </p>
 
-**Design:** ebony and sika gold, with kente-cloth bands and a sunset glow. Each family member gets a kente colour
-(Sika Gold, Kente Green, Maasai Red, Adire Indigo, Terracotta, Malachite).
+**Design:** a 1920s broadsheet in black ink on newsprint. It has a blackletter masthead, stacked headlines,
+double rules, a timetable-style checklist and a boxed *Bulletin* at go time. There is no colour: each family member
+gets a monogram *seal* in its own engraving style (solid, outline, double rule, grey wash, dotted, heavy ring). Type is
+UnifrakturMaguntia, Old Standard TT and Libre Caslon Text. The earlier kente/ebony-and-gold look is in git history
+(commit `45d6d55`).
 
 **Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single
 self-contained page with the fonts embedded. It can be hosted anywhere. When you pick the example family on the web,
-Akol turns on a *demo clock* (6:48am on weekdays), so the morning routine is live whatever the time. Turn it off in
+Akol turns on a *demo clock* (6:48 a.m. on weekdays), so the morning routine is live whatever the time. Turn it off in
 Settings or by tapping the pill on Today.
 
 ## Tech (chosen to keep costs low for a solo founder)

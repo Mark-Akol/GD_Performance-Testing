@@ -35,10 +35,11 @@ function withDone(state: AkolState, day: Date, ids: string[]): AkolState {
 
 describe('time helpers', () => {
   it('formats 12-hour times', () => {
-    assert.equal(formatTime('06:45'), '6:45am');
-    assert.equal(formatTime('00:05'), '12:05am');
-    assert.equal(formatTime('12:00'), '12:00pm');
-    assert.equal(formatTime('19:30'), '7:30pm');
+    assert.equal(formatTime('06:45'), '6:45 a.m.');
+    assert.equal(formatTime('00:05'), '12:05 a.m.');
+    assert.equal(formatTime('12:00'), '12:00 noon');
+    assert.equal(formatTime('12:30'), '12:30 p.m.');
+    assert.equal(formatTime('19:30'), '7:30 p.m.');
   });
   it('wraps clock arithmetic around midnight', () => {
     assert.equal(toClockTime(-5), '23:55');

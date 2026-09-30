@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -15,52 +14,48 @@ import {
 } from '../lib/schedule';
 import { useAkol } from '../lib/store';
 import type { DayKey, Task } from '../lib/types';
-import { colors, fonts, gradients, lining, radius, space } from '../theme';
-import { Avatar, jewelFor } from './Avatar';
-import { KenteBand } from './Kente';
-import { Body, Card, Dim, Eyebrow, tap } from './ui';
+import { colors, fonts, lining, space } from '../theme';
+import { Avatar } from './Avatar';
+import { DoubleRule } from './Rules';
+import { Card, Eyebrow, tap } from './ui';
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
   done: 'Done',
-  overdue: 'Overdue',
+  overdue: 'Late',
   due: 'Due now',
   soon: 'Coming up',
   upcoming: '',
 };
 
-const STATUS_COLOR: Record<TaskStatus, string> = {
-  done: colors.success,
-  overdue: colors.danger,
-  due: colors.gold,
-  soon: colors.warning,
-  upcoming: colors.textFaint,
-};
-
 function TimeLabel({ time, faded }: { time: string; faded?: boolean }) {
-  const f = formatTime(time);
-  const clock = f.slice(0, -2);
-  const ampm = f.slice(-2);
+  const [clock, period] = formatTime(time).split(' ');
   return (
     <View style={s.timeCol}>
       <Text style={[s.time, faded && { color: colors.textFaint }]}>{clock}</Text>
-      <Text style={s.ampm}>{ampm}</Text>
+      <Text style={s.ampm}>{period}</Text>
     </View>
   );
 }
 
-export function CheckCircle({ done, color, size = 28 }: { done: boolean; color: string; size?: number }) {
-  if (done)
+/** A printed ballot box: empty, or struck through with a tick in reversed ink. */
+export function CheckCircle({ done, size = 26 }: { done: boolean; color?: string; size?: number }) {
+  return (
+    <View style={[s.check, { width: size, height: size }, done && { backgroundColor: colors.ink }]}>
+      {done && <Ionicons name="checkmark" size={size * 0.72} color={colors.bg} />}
+    </View>
+  );
+}
+
+/** "Late", "Due now" and friends, set as a newspaper would flag them. */
+function StatusMark({ status, text }: { status: TaskStatus; text: string }) {
+  if (!text) return null;
+  if (status === 'overdue')
     return (
-      <LinearGradient
-        colors={gradients.gold}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[s.check, { width: size, height: size, borderRadius: size / 2, borderColor: 'transparent' }]}
-      >
-        <Ionicons name="checkmark" size={size * 0.62} color={colors.bg} />
-      </LinearGradient>
+      <View style={s.reversed}>
+        <Text style={s.reversedText}>{text}</Text>
+      </View>
     );
-  return <View style={[s.check, { width: size, height: size, borderRadius: size / 2, borderColor: color + 'AA' }]} />;
+  return <Text style={[s.hint, status === 'soon' && { fontFamily: fonts.italic, textTransform: 'none', letterSpacing: 0 }]}>{text}</Text>;
 }
 
 export function TaskRow({
@@ -69,7 +64,6 @@ export function TaskRow({
   now,
   showMember,
   isToday = true,
-  last,
 }: {
   task: Task;
   day: DayKey;
@@ -82,49 +76,38 @@ export function TaskRow({
   const done = isDone(state.completions, day, task.id);
   const status: TaskStatus = isToday ? taskStatus(task, done, now) : done ? 'done' : 'upcoming';
   const m = member(task.memberId);
-  const j = jewelFor(m, task.memberId);
-  const hot = status === 'due' || status === 'overdue';
 
   let hint = STATUS_LABEL[status];
   if (isToday && (status === 'soon' || status === 'overdue')) hint = `${hint} · ${relative(atTime(now, task.time), now)}`;
+  if (status === 'soon') hint = relative(atTime(now, task.time), now);
 
   return (
-    <View style={s.rowWrap}>
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: done }}
+      accessibilityLabel={`${task.title} at ${formatTime(task.time)}${m ? ` for ${m.name}` : ''}`}
+      onPress={() => {
+        tap(done ? 'light' : 'success');
+        toggle(task.id, day);
+      }}
+      onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}
+      style={({ pressed }) => [s.row, status === 'due' && s.rowDue, pressed && { opacity: 0.6 }]}
+    >
       <TimeLabel time={task.time} faded={done} />
-      <View style={s.rail}>
-        <View style={[s.node, { backgroundColor: done ? colors.gold : hot ? STATUS_COLOR[status] : colors.bgRaised, borderColor: done ? colors.gold : j.base }]} />
-        {!last && <View style={s.railLine} />}
+      <View style={s.rowBody}>
+        {showMember && <Text style={s.byline}>{m ? m.name : 'The Family'}</Text>}
+        <Text style={[s.itemTitle, done && s.itemDone]} numberOfLines={2}>
+          {task.title}
+        </Text>
+        {((!!hint && !done) || !!task.note) && (
+          <View style={s.meta}>
+            {!done && <StatusMark status={status} text={hint} />}
+            {!!task.note && <Text style={s.note} numberOfLines={1}>{task.note}</Text>}
+          </View>
+        )}
       </View>
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: done }}
-        accessibilityLabel={`${task.title} at ${formatTime(task.time)}${m ? ` for ${m.name}` : ''}`}
-        onPress={() => {
-          tap(done ? 'light' : 'success');
-          toggle(task.id, day);
-        }}
-        onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}
-        style={({ pressed }) => [s.item, hot && { borderColor: STATUS_COLOR[status] + '88' }, pressed && { opacity: 0.8 }]}
-      >
-        <View style={{ flex: 1, gap: 4 }}>
-          <Text style={[s.itemTitle, done && s.itemDone]} numberOfLines={2}>
-            {task.title}
-          </Text>
-          {(showMember || !!task.note || !!hint) && (
-            <View style={s.meta}>
-              {showMember && (
-                <View style={[s.memberTag, { backgroundColor: j.base + '22' }]}>
-                  <Text style={[s.memberTagText, { color: j.light }]}>{m ? m.name : 'Family'}</Text>
-                </View>
-              )}
-              {!!hint && !done && <Text style={[s.hint, { color: STATUS_COLOR[status] }]}>{hint}</Text>}
-              {!!task.note && <Text style={s.note} numberOfLines={1}>{task.note}</Text>}
-            </View>
-          )}
-        </View>
-        <CheckCircle done={done} color={j.base} />
-      </Pressable>
-    </View>
+      <CheckCircle done={done} />
+    </Pressable>
   );
 }
 
@@ -138,34 +121,28 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
   const until = isToday ? relative(atTime(now, task.time), now) : '';
 
   return (
-    <Card glow style={{ marginVertical: space.sm, paddingTop: space.lg + 8 }}>
-      <LinearGradient colors={gradients.goldSoft} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} />
-      <KenteBand height={8} repeats={5} style={{ position: 'absolute', top: 0, left: 0, right: 0 }} />
-      <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}>
-        <View style={[s.meta, { justifyContent: 'space-between' }]}>
-          <Eyebrow>Checkpoint · {formatTime(task.time)}</Eyebrow>
-          {isToday && !summary.complete && <Text style={[s.hint, { color: reached ? colors.danger : colors.gold }]}>{until}</Text>}
-        </View>
-        <View style={[s.meta, { justifyContent: 'space-between', marginTop: space.sm }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.cpTitle}>{task.title}</Text>
-            <Dim style={{ marginTop: 2 }}>
-              {summary.complete ? 'Everyone is ready. Off you go ✨' : (task.note ?? 'Have you completed the checklist?')}
-            </Dim>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={s.cpCount}>
-              {summary.done.length}
-              <Text style={s.cpOf}> / {total}</Text>
-            </Text>
-            <Text style={s.ampm}>ready</Text>
-          </View>
+    <Card glow style={{ marginVertical: space.md }}>
+      <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })} style={{ alignItems: 'center' }}>
+        <Eyebrow>{summary.complete ? 'Late Edition' : 'Bulletin'} · {formatTime(task.time)}</Eyebrow>
+        <Text style={s.cpTitle}>{task.title}</Text>
+        <Text style={s.cpDeck}>
+          {summary.complete ? 'Every Item Checked Off; Family Ready to Depart' : (task.note ?? 'Have you completed the checklist?')}
+        </Text>
+        <DoubleRule style={{ marginVertical: space.md }} />
+        <View style={s.cpTally}>
+          <Text style={s.cpCount}>
+            {summary.done.length}
+            <Text style={s.cpOf}> of {total} ready</Text>
+          </Text>
+          {isToday && !summary.complete && (
+            <Text style={[s.hint, reached && s.reversedInline]}>{reached ? ' Time is up ' : until}</Text>
+          )}
         </View>
       </Pressable>
 
       {summary.outstanding.length > 0 && (
-        <View style={{ marginTop: space.md, gap: 6 }}>
-          <Eyebrow style={{ color: colors.textDim, fontSize: 10 }}>Still to do</Eyebrow>
+        <View style={{ marginTop: space.md }}>
+          <Eyebrow style={{ fontSize: 10, marginBottom: 4 }}>Still Outstanding</Eyebrow>
           {summary.outstanding.map((t) => (
             <Pressable
               key={t.id}
@@ -175,10 +152,11 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
                 toggle(t.id, day);
               }}
             >
-              <Avatar member={member(t.memberId)} memberId={t.memberId} size={24} />
-              <Body style={{ flex: 1 }} numberOfLines={1}>{t.title}</Body>
+              <Avatar member={member(t.memberId)} memberId={t.memberId} size={22} />
+              <Text style={s.cpItemText} numberOfLines={1}>{t.title}</Text>
+              <View style={s.leader} />
               <Text style={s.cpTime}>{formatTime(t.time)}</Text>
-              <CheckCircle done={false} color={jewelFor(member(t.memberId), t.memberId).base} size={22} />
+              <CheckCircle done={false} size={20} />
             </Pressable>
           ))}
           <Pressable
@@ -188,15 +166,14 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
             }}
             style={s.allDone}
           >
-            <Ionicons name="checkmark-done" size={16} color={colors.gold} />
-            <Text style={s.allDoneText}>Mark all as done</Text>
+            <Text style={s.allDoneText}>Mark all as done ☞</Text>
           </Pressable>
         </View>
       )}
 
       {summary.done.length > 0 && (
-        <Pressable onPress={() => setShowDone((v) => !v)} style={{ marginTop: space.md }}>
-          <Text style={[s.hint, { color: colors.textDim }]}>
+        <Pressable onPress={() => setShowDone((v) => !v)} style={{ marginTop: space.sm }}>
+          <Text style={[s.note, { fontSize: 13 }]}>
             {showDone ? 'Hide' : 'Show'} {summary.done.length} completed {showDone ? '▴' : '▾'}
           </Text>
         </Pressable>
@@ -204,9 +181,10 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
       {showDone &&
         summary.done.map((t) => (
           <Pressable key={t.id} style={s.cpItem} onPress={() => toggle(t.id, day)}>
-            <Avatar member={member(t.memberId)} memberId={t.memberId} size={24} />
-            <Body style={[{ flex: 1 }, s.itemDone]} numberOfLines={1}>{t.title}</Body>
-            <CheckCircle done color={colors.gold} size={22} />
+            <Avatar member={member(t.memberId)} memberId={t.memberId} size={22} />
+            <Text style={[s.cpItemText, s.itemDone]} numberOfLines={1}>{t.title}</Text>
+            <View style={s.leader} />
+            <CheckCircle done size={20} />
           </Pressable>
         ))}
     </Card>
@@ -228,11 +206,11 @@ export function Timeline({
 }) {
   return (
     <View>
-      {tasks.map((t, i) =>
+      {tasks.map((t) =>
         t.checkpoint ? (
           <CheckpointCard key={t.id} task={t} day={day} now={now} isToday={isToday} />
         ) : (
-          <TaskRow key={t.id} task={t} day={day} now={now} showMember={showMember} isToday={isToday} last={i === tasks.length - 1 || !!tasks[i + 1]?.checkpoint} />
+          <TaskRow key={t.id} task={t} day={day} now={now} showMember={showMember} isToday={isToday} />
         ),
       )}
     </View>
@@ -240,47 +218,49 @@ export function Timeline({
 }
 
 const s = StyleSheet.create({
-  rowWrap: { flexDirection: 'row', alignItems: 'stretch', minHeight: 70 },
-  timeCol: { width: 52, alignItems: 'flex-end', paddingTop: 16, paddingRight: 2 },
-  time: { fontFamily: fonts.displayMedium, fontSize: 17, color: colors.ivory, ...lining },
-  ampm: { fontFamily: fonts.medium, fontSize: 10, letterSpacing: 1.4, color: colors.textFaint, textTransform: 'uppercase' },
-  rail: { width: 26, alignItems: 'center' },
-  node: { width: 11, height: 11, borderRadius: 6, borderWidth: 2, marginTop: 22, zIndex: 2 },
-  railLine: { position: 'absolute', top: 30, bottom: -24, width: 1, backgroundColor: colors.hairline },
-  item: {
-    flex: 1,
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    backgroundColor: 'rgba(255,255,255,0.025)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    borderRadius: radius.md,
     paddingVertical: 14,
-    paddingHorizontal: space.lg,
-    marginVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.hairline,
+    borderStyle: 'dotted',
   },
-  itemTitle: { fontFamily: fonts.medium, fontSize: 16, color: colors.ivory },
+  rowDue: { backgroundColor: colors.wash, marginHorizontal: -8, paddingHorizontal: 8 },
+  timeCol: { width: 50, alignItems: 'flex-end' },
+  time: { fontFamily: fonts.display, fontSize: 18, color: colors.text, ...lining },
+  ampm: { fontFamily: fonts.displayItalic, fontSize: 11, color: colors.textDim },
+  rowBody: { flex: 1, gap: 3, borderLeftWidth: 1, borderLeftColor: colors.ink, paddingLeft: space.md },
+  byline: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.textDim },
+  itemTitle: { fontFamily: fonts.body, fontSize: 17, lineHeight: 22, color: colors.text },
   itemDone: { color: colors.textFaint, textDecorationLine: 'line-through' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
-  memberTag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
-  memberTagText: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.4 },
-  hint: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 0.3 },
-  note: { fontFamily: fonts.body, fontSize: 12, color: colors.textDim, flexShrink: 1 },
-  check: { borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  cpTitle: { fontFamily: fonts.display, fontSize: 28, color: colors.ivory },
-  cpCount: { fontFamily: fonts.display, fontSize: 32, color: colors.gold, ...lining },
-  cpOf: { fontFamily: fonts.displayMedium, fontSize: 18, color: colors.textDim, ...lining },
-  cpItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: 10,
-    paddingHorizontal: space.md,
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(7,8,15,0.45)',
+  hint: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.ink },
+  reversed: { backgroundColor: colors.ink, paddingHorizontal: 6, paddingVertical: 2 },
+  reversedText: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.bg },
+  reversedInline: { backgroundColor: colors.ink, color: colors.bg },
+  note: { fontFamily: fonts.italic, fontSize: 13, color: colors.textDim, flexShrink: 1 },
+  check: { borderWidth: 1.5, borderColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  cpTitle: {
+    fontFamily: fonts.display,
+    fontSize: 38,
+    lineHeight: 44,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: 6,
   },
-  cpTime: { fontFamily: fonts.medium, fontSize: 12, color: colors.textDim },
-  allDone: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 8, marginTop: 2 },
-  allDoneText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.gold },
+  cpDeck: { fontFamily: fonts.displayItalic, fontSize: 17, lineHeight: 22, color: colors.text, textAlign: 'center', marginTop: 4 },
+  cpTally: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', alignSelf: 'stretch', gap: space.sm },
+  cpCount: { fontFamily: fonts.display, fontSize: 30, color: colors.ink, ...lining },
+  cpOf: { fontFamily: fonts.displayItalic, fontSize: 17, color: colors.textDim },
+  cpItem: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 9 },
+  cpItemText: { fontFamily: fonts.body, fontSize: 15, color: colors.text, flexShrink: 1 },
+
+  leader: { flex: 1, minWidth: 8, borderBottomWidth: 2, borderBottomColor: colors.textFaint, borderStyle: 'dotted', marginBottom: 4, alignSelf: 'flex-end' },
+  cpTime: { fontFamily: fonts.displayItalic, fontSize: 13, color: colors.textDim, flexShrink: 0, ...lining },
+  allDone: { alignSelf: 'flex-end', paddingVertical: 8, marginTop: 4 },
+  allDoneText: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.ink },
 });

@@ -81,7 +81,7 @@ export default function MemberScreen() {
               hitSlop={10}
               onPress={() => router.push({ pathname: '/task', params: { memberId: m.id, routineId: firstRoutine.id } })}
             >
-              <Ionicons name="add-circle-outline" size={24} color={colors.gold} />
+              <Ionicons name="add-circle-outline" size={24} color={colors.ink} />
             </Pressable>
           )
         }
@@ -99,9 +99,9 @@ export default function MemberScreen() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginTop: space.sm },
-  edit: { fontFamily: fonts.semibold, color: colors.gold, fontSize: 15 },
+  edit: { fontFamily: fonts.semibold, color: colors.ink, fontSize: 15 },
   stats: { flexDirection: 'row', gap: space.md, marginTop: space.xl },
   stat: { flex: 1, alignItems: 'center', paddingVertical: space.lg },
-  statNum: { fontFamily: fonts.display, fontSize: 24, color: colors.gold, ...lining },
+  statNum: { fontFamily: fonts.display, fontSize: 24, color: colors.ink, ...lining },
   statLabel: { fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', marginTop: 2 },
 });

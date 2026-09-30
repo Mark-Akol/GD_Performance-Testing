@@ -24,8 +24,8 @@ export function emptyState(): AkolState {
 
 /** The Akol household: Mark (Dad) and Ra, on a school-morning routine. */
 export function exampleFamily(parentName = 'Mark'): AkolState {
-  const mark: Member = { id: 'm_mark', name: parentName, role: 'parent', color: 'sika', emoji: '👑' };
-  const ra: Member = { id: 'm_ra', name: 'Ra', role: 'child', color: 'adire', emoji: '🦁' };
+  const mark: Member = { id: 'm_mark', name: parentName, role: 'parent', color: 'sika' };
+  const ra: Member = { id: 'm_ra', name: 'Ra', role: 'child', color: 'kente' };
 
   const school: Routine = { id: 'r_school', name: 'School Morning', days: [1, 2, 3, 4, 5], enabled: true };
   const weekend: Routine = { id: 'r_weekend', name: 'Weekend Football', days: [0, 6], enabled: true };
@@ -89,7 +89,7 @@ export function exampleFamily(parentName = 'Mark'): AkolState {
 
 /** A fresh household with only the parent, ready to be built up. */
 export function freshFamily(parentName: string): AkolState {
-  const me: Member = { id: uid('m_'), name: parentName.trim() || 'Me', role: 'parent', color: 'sika', emoji: '👑' };
+  const me: Member = { id: uid('m_'), name: parentName.trim() || 'Me', role: 'parent', color: 'sika' };
   const s = emptyState();
   const routine: Routine = { id: uid('r_'), name: 'Morning', days: [1, 2, 3, 4, 5], enabled: true };
   return {

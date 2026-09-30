@@ -32,7 +32,7 @@ export function BackBar({
         }}
         style={styles.btn}
       >
-        <Ionicons name={icon} size={22} color={colors.gold} />
+        <Ionicons name={icon} size={22} color={colors.ink} />
       </Pressable>
       {right}
     </View>

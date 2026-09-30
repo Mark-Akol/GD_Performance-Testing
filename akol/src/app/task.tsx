@@ -12,7 +12,7 @@ import {
   Eyebrow,
   Field,
   GhostButton,
-  GoldButton,
+  InkButton,
   Screen,
   SectionHeader,
   ToggleRow,
@@ -154,7 +154,7 @@ export default function TaskEditor() {
       </View>
 
       <View style={{ gap: space.md, marginTop: space.xl }}>
-        <GoldButton label={existing ? 'Save changes' : 'Add to routine'} onPress={save} disabled={!canSave} />
+        <InkButton label={existing ? 'Save changes' : 'Add to routine'} onPress={save} disabled={!canSave} />
         {existing && (
           <GhostButton
             label="Delete"

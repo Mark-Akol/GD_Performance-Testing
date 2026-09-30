@@ -1,23 +1,21 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { useId } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
 import { FAMILY_ID } from '../lib/schedule';
 import type { Member } from '../lib/types';
-import { colors, familyJewel, fonts, jewels } from '../theme';
+import { colors, familyJewel, fonts, jewels, type SealStyle } from '../theme';
 
 export function jewelFor(member: Member | undefined | null, memberId?: string) {
-  if (!member) return memberId === FAMILY_ID ? familyJewel : jewels.malachite;
-  return jewels[member.color] ?? jewels.malachite;
+  if (!member) return memberId === FAMILY_ID ? familyJewel : jewels.adire;
+  return jewels[member.color] ?? jewels.adire;
 }
 
 export function ProgressRing({
   size,
   stroke = 3,
   ratio,
-  color = colors.gold,
-  track = 'rgba(255,255,255,0.08)',
+  color = colors.ink,
+  track = 'rgba(20,20,20,0.12)',
 }: {
   size: number;
   stroke?: number;
@@ -28,26 +26,16 @@ export function ProgressRing({
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const clamped = Math.max(0, Math.min(1, ratio));
-  // Unique per ring so gradients don't collide on web, where SVG ids share one document.
-  const gradId = `ring${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-      <Defs>
-        <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.9} />
-          <Stop offset="0.35" stopColor={color} stopOpacity={1} />
-          <Stop offset="1" stopColor={color} stopOpacity={0.85} />
-        </SvgGradient>
-      </Defs>
       <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
       {clamped > 0 && (
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={`url(#${gradId})`}
+          stroke={color}
           strokeWidth={stroke}
-          strokeLinecap="round"
           fill="none"
           strokeDasharray={`${c} ${c}`}
           strokeDashoffset={c * (1 - clamped)}
@@ -57,7 +45,25 @@ export function ProgressRing({
   );
 }
 
-/** Jewel-toned medallion. With `ratio`, it is ringed by a progress arc. */
+function sealStyle(style: SealStyle, d: number): { box: ViewStyle; ink: string } {
+  const round = { width: d, height: d, borderRadius: d / 2 };
+  switch (style) {
+    case 'solid':
+      return { box: { ...round, backgroundColor: colors.ink }, ink: colors.bg };
+    case 'wash':
+      return { box: { ...round, backgroundColor: '#5E5A51' }, ink: colors.bg };
+    case 'outline':
+      return { box: { ...round, borderWidth: 1.5, borderColor: colors.ink }, ink: colors.ink };
+    case 'dotted':
+      return { box: { ...round, borderWidth: 2, borderColor: colors.ink, borderStyle: 'dotted' }, ink: colors.ink };
+    case 'heavy':
+      return { box: { ...round, borderWidth: Math.max(3, d * 0.09), borderColor: colors.ink }, ink: colors.ink };
+    case 'double':
+      return { box: { ...round, borderWidth: 1, borderColor: colors.ink, padding: 2 }, ink: colors.ink };
+  }
+}
+
+/** A monogram seal, engraved in one of six styles. With `ratio`, it is ringed by a progress arc. */
 export function Avatar({
   member,
   memberId,
@@ -70,40 +76,34 @@ export function Avatar({
   ratio?: number;
 }) {
   const j = jewelFor(member, memberId);
-  const ringGap = ratio === undefined ? 0 : Math.max(4, size * 0.09);
+  const ringGap = ratio === undefined ? 0 : Math.max(4, size * 0.1);
   const inner = size - ringGap * 2;
-  const label = member?.emoji || (member ? member.name.slice(0, 1).toUpperCase() : '✦');
+  const { box, ink } = sealStyle(j.style, inner);
+  const label = member?.emoji || (member ? member.name.slice(0, 1).toUpperCase() : '✠');
+  const face = (
+    <Text style={{ fontSize: inner * 0.48, fontFamily: fonts.display, color: ink, textAlign: 'center', includeFontPadding: false }}>
+      {label}
+    </Text>
+  );
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       {ratio !== undefined && (
         <View style={StyleSheet.absoluteFill}>
-          <ProgressRing size={size} ratio={ratio} color={j.base} stroke={Math.max(2.5, size * 0.055)} />
+          <ProgressRing size={size} ratio={ratio} stroke={Math.max(2, size * 0.045)} />
         </View>
       )}
-      <LinearGradient
-        colors={[j.light, j.base, j.deep]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={{
-          width: inner,
-          height: inner,
-          borderRadius: inner / 2,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.35)',
-        }}
-      >
-        <Text
-          style={{
-            fontSize: inner * 0.46,
-            fontFamily: member?.emoji ? undefined : fonts.display,
-            color: colors.bg,
-          }}
-        >
-          {label}
-        </Text>
-      </LinearGradient>
+      <View style={[box, styles.center]}>
+        {j.style === 'double' ? (
+          <View style={[styles.center, styles.innerRing, { borderRadius: inner }]}>{face}</View>
+        ) : (
+          face
+        )}
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { alignItems: 'center', justifyContent: 'center' },
+  innerRing: { flex: 1, alignSelf: 'stretch', borderWidth: 1, borderColor: colors.ink },
+});
