@@ -1,60 +1,63 @@
 import type { JewelKey } from '../lib/types';
 
 /**
- * Akol "Orrery": obsidian night, champagne gold, pearl type and dark glass panels over a
- * live 3D scene. Each family member is a precious metal or gem.
+ * Akol "Maison": black and white only, set bold. Pure black ground, white type in a heavy
+ * Didone, hairline frames, and solid white panels for the moments that matter. The 3D orrery
+ * is rendered in chrome, platinum, black glass and pearl.
  */
 export const colors = {
-  bg: '#07060A',
-  bgRaised: '#100E16',
-  card: 'rgba(255, 250, 240, 0.045)',
-  cardHi: 'rgba(255, 250, 240, 0.08)',
-  hairline: 'rgba(255, 236, 200, 0.12)',
-  hairlineStrong: 'rgba(255, 226, 170, 0.42)',
-  ink: '#E8C78A',
-  inkSoft: '#F6E3BA',
-  inkDeep: '#B8894A',
-  text: '#F4EFE8',
-  textDim: 'rgba(244, 239, 232, 0.64)',
-  textFaint: 'rgba(244, 239, 232, 0.38)',
-  success: '#9BE2C0',
-  warning: '#F0B774',
-  danger: '#F0857A',
-  overlay: 'rgba(4, 3, 8, 0.72)',
-  wash: 'rgba(232, 199, 138, 0.08)',
-  /** Cool counter-light used for depth. */
-  lilac: '#9C8CFF',
+  bg: '#000000',
+  bgRaised: '#0D0D0D',
+  card: '#000000',
+  cardHi: '#141414',
+  hairline: 'rgba(255, 255, 255, 0.18)',
+  hairlineStrong: '#FFFFFF',
+  /** The accent is white: in this house, emphasis is contrast, not colour. */
+  ink: '#FFFFFF',
+  inkSoft: '#E6E6E6',
+  inkDeep: '#BDBDBD',
+  text: '#FFFFFF',
+  textDim: 'rgba(255, 255, 255, 0.66)',
+  textFaint: 'rgba(255, 255, 255, 0.38)',
+  success: '#FFFFFF',
+  warning: '#BDBDBD',
+  danger: '#FFFFFF',
+  overlay: 'rgba(0, 0, 0, 0.82)',
+  wash: 'rgba(255, 255, 255, 0.07)',
+  /** Text and marks that sit on a white panel. */
+  onPaper: '#000000',
+  lilac: '#FFFFFF',
 } as const;
 
 export const gradients = {
-  page: ['#120E1C', '#07060A', '#040306'] as const,
-  ink: ['#FFE9BD', '#E8C78A', '#B8894A'] as const,
-  inkSoft: ['rgba(232,199,138,0.07)', 'rgba(232,199,138,0)'] as const,
-  card: ['rgba(255,250,240,0.075)', 'rgba(255,250,240,0.025)'] as const,
-  sheen: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.35)', 'rgba(255,255,255,0)'] as const,
+  page: ['#000000', '#000000'] as const,
+  ink: ['#FFFFFF', '#FFFFFF'] as const,
+  inkSoft: ['rgba(255,255,255,0)', 'rgba(255,255,255,0)'] as const,
+  card: ['#000000', '#000000'] as const,
+  sheen: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.12)', 'rgba(0,0,0,0)'] as const,
 };
 
 export type SealStyle = 'solid' | 'outline' | 'double' | 'wash' | 'dotted' | 'heavy';
 
 /**
- * Each family member's metal or gem. `hex` colours their ring and beads in the 3D scene
- * and their accents in the UI. Keys are kept from earlier releases so saved data still loads.
+ * Each family member's finish, used for their ring and beads in the orrery and their
+ * monogram seal. Keys are kept from earlier releases so saved data still loads.
  */
 export const jewels: Record<
   JewelKey,
   { name: string; style: SealStyle; hex: string; metal: number; base: string; light: string; deep: string }
 > = {
-  sika: { name: 'Gold', style: 'solid', hex: '#E8C78A', metal: 1, base: '#E8C78A', light: '#FFE9BD', deep: '#8A6424' },
-  kente: { name: 'Platinum', style: 'solid', hex: '#DCE3EE', metal: 1, base: '#DCE3EE', light: '#FFFFFF', deep: '#7D8696' },
-  adire: { name: 'Rose Gold', style: 'solid', hex: '#E9A995', metal: 1, base: '#E9A995', light: '#FFD6C8', deep: '#8E5243' },
-  maasai: { name: 'Garnet', style: 'solid', hex: '#C4475A', metal: 0.3, base: '#C4475A', light: '#F29AA6', deep: '#5E1422' },
-  terracotta: { name: 'Amethyst', style: 'solid', hex: '#A98BF2', metal: 0.3, base: '#A98BF2', light: '#D8C9FF', deep: '#4B3290' },
-  malachite: { name: 'Jade', style: 'solid', hex: '#62C4A2', metal: 0.3, base: '#62C4A2', light: '#B5F0DB', deep: '#1D6450' },
+  sika: { name: 'Chrome', style: 'solid', hex: '#FFFFFF', metal: 1, base: '#FFFFFF', light: '#FFFFFF', deep: '#9A9A9A' },
+  kente: { name: 'Pearl', style: 'outline', hex: '#ECE9E2', metal: 0.25, base: '#ECE9E2', light: '#FFFFFF', deep: '#8F8C86' },
+  adire: { name: 'Platinum', style: 'double', hex: '#D4D4D4', metal: 1, base: '#D4D4D4', light: '#FFFFFF', deep: '#7A7A7A' },
+  maasai: { name: 'Gunmetal', style: 'heavy', hex: '#7E7E7E', metal: 1, base: '#7E7E7E', light: '#C8C8C8', deep: '#3A3A3A' },
+  terracotta: { name: 'Smoke', style: 'dotted', hex: '#A8A8A8', metal: 0.5, base: '#A8A8A8', light: '#E0E0E0', deep: '#555555' },
+  malachite: { name: 'Onyx', style: 'wash', hex: '#3C3C3C', metal: 0.9, base: '#3C3C3C', light: '#9A9A9A', deep: '#111111' },
 };
 
 export const JEWEL_KEYS = Object.keys(jewels) as JewelKey[];
 
-/** Colour keys from the first release, mapped onto metals and gems. */
+/** Colour keys from the first release, mapped onto finishes. */
 export const LEGACY_JEWELS: Record<string, JewelKey> = {
   topaz: 'sika',
   emerald: 'malachite',
@@ -65,29 +68,31 @@ export const LEGACY_JEWELS: Record<string, JewelKey> = {
 };
 
 export const fonts = {
-  masthead: 'CormorantGaramond_300Light_Italic',
-  display: 'CormorantGaramond_500Medium',
-  displayBold: 'CormorantGaramond_600SemiBold',
-  displayItalic: 'CormorantGaramond_400Regular_Italic',
-  displayMedium: 'CormorantGaramond_500Medium',
-  body: 'Manrope_400Regular',
-  light: 'Manrope_300Light',
-  italic: 'CormorantGaramond_400Regular_Italic',
-  medium: 'Manrope_500Medium',
-  semibold: 'Manrope_600SemiBold',
+  /** The heaviest Didone: the house's voice. */
+  masthead: 'BodoniModa_900Black',
+  display: 'BodoniModa_900Black',
+  displayBold: 'BodoniModa_900Black',
+  displayItalic: 'BodoniModa_400Regular_Italic',
+  displayMedium: 'BodoniModa_700Bold',
+  body: 'Jost_400Regular',
+  light: 'Jost_300Light',
+  italic: 'BodoniModa_400Regular_Italic',
+  medium: 'Jost_500Medium',
+  semibold: 'Jost_600SemiBold',
 } as const;
 
 export const lining = { fontVariant: ['lining-nums' as const] };
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
-export const radius = { sm: 12, md: 18, lg: 26, pill: 999 } as const;
+/** Sharp panels, round seals and pills. */
+export const radius = { sm: 0, md: 0, lg: 0, pill: 999 } as const;
 
 export const familyJewel = {
   name: 'Family',
   style: 'solid' as SealStyle,
-  hex: '#FFE9BD',
+  hex: '#FFFFFF',
   metal: 1,
-  base: '#E8C78A',
-  light: '#FFE9BD',
-  deep: '#B8894A',
+  base: '#FFFFFF',
+  light: '#FFFFFF',
+  deep: '#9A9A9A',
 };

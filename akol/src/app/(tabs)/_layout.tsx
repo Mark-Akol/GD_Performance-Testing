@@ -17,7 +17,7 @@ const TABS: { name: string; title: string }[] = [
   { name: 'settings', title: 'Settings' },
 ];
 
-/** A floating glass capsule rather than a bar pinned to the edge. */
+/** A floating black capsule; the current tab is a solid white pill. */
 function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   return (
@@ -39,8 +39,9 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
               }}
               style={styles.item}
             >
-              <Text style={[styles.label, focused && styles.labelActive]}>{title}</Text>
-              <View style={[styles.dot, focused && styles.dotActive]} />
+              <View style={[styles.pill, focused && styles.pillActive]}>
+                <Text style={[styles.label, focused && styles.labelActive]}>{title}</Text>
+              </View>
             </Pressable>
           );
         })}
@@ -75,19 +76,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.hairline,
-    backgroundColor: 'rgba(16,14,22,0.78)',
+    borderColor: colors.hairlineStrong,
+    backgroundColor: 'rgba(0,0,0,0.88)',
+    padding: 5,
     ...(Platform.OS === 'web' ? ({ backdropFilter: 'blur(18px)' } as object) : {}),
   },
-  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  label: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: colors.textFaint },
-  labelActive: { color: colors.ink },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: 'transparent' },
-  dotActive: {
-    backgroundColor: colors.ink,
-    shadowColor: colors.ink,
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-  },
+  item: { flex: 1 },
+  pill: { flex: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  pillActive: { backgroundColor: colors.ink },
+  label: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: colors.textDim },
+  labelActive: { color: colors.onPaper },
 });

@@ -57,15 +57,15 @@ export default function Welcome() {
       <FadeIn style={styles.stage}>
         <Orrery rings={preview.rings} nowFrac={preview.nowFrac} checkpointRatio={5 / 11} height={440} autoOrbit={0.12} />
         <View style={styles.titleBlock} pointerEvents="none">
-          <Text style={styles.word}>Akol</Text>
+          <Text style={styles.word}>AKOL</Text>
           <Text style={styles.tag}>The family, on time</Text>
         </View>
       </FadeIn>
 
       <FadeIn delay={300}>
         <Text style={styles.lede}>
-          Each person in your family is an orbit of gold, platinum or rose. Each task is a gem at its minute. At go time
-          the diamond asks if everything is done.
+          Each person in your family is an orbit of chrome, platinum or pearl. Each task is a jewel at its minute. At go
+          time the diamond asks if everything is done.
         </Text>
       </FadeIn>
 
@@ -108,13 +108,10 @@ const styles = StyleSheet.create({
   titleBlock: { position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center' },
   word: {
     fontFamily: fonts.masthead,
-    fontSize: 112,
-    lineHeight: 118,
-    color: colors.inkSoft,
-    letterSpacing: -2,
-    textShadowColor: 'rgba(232,199,138,0.55)',
-    textShadowRadius: 30,
-    textShadowOffset: { width: 0, height: 0 },
+    fontSize: 104,
+    lineHeight: 110,
+    color: colors.text,
+    letterSpacing: -3,
   },
   tag: {
     fontFamily: fonts.semibold,

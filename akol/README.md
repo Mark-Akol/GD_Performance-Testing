@@ -19,16 +19,14 @@ shows everyone's open items.
   <img src="docs/screenshots/family.png" width="200" alt="Family overview" />
 </p>
 
-**Design: the Orrery.** An opulent, real-time 3D design, in the style of an award-winning WebGL site. Today is
-built around a live three.js scene (React Three Fiber, rendered through expo-gl on iOS and Android). A polished gold
-core glows at the centre, with armillary bands around it. Each family member orbits on their own inclined ring of
-gold, platinum, rose gold or a gemstone. Every task is a gem bead at its minute, and you tap a bead to tick it off.
-Done beads shine, the one due now pulses, and late ones glow garnet. A white spark marks now, and the Go-time diamond
-hovers above and brightens as the checklist fills. Lighting comes from a studio environment generated in code, so no
-HDR files are downloaded. The camera drifts with the pointer. Around the scene: dark glass panels with lit edges,
-staggered 3D fade-up entrances, tilt-on-press cards, a gold button with a moving sheen, drifting ambient light and a
-floating glass tab bar. Type is Cormorant Garamond with Manrope. The 3D code is in `src/components/three/`. Earlier
-looks are in git history: kente (`45d6d55`), broadsheet (`719242a`), Dial (`195c29d`) and manga (`4de31a8`).
+**Design: Maison.** Opulent black and white, set bold, in the manner of a fashion house. It uses a pure black ground,
+white type in Bodoni Moda Black (the heaviest Didone) with Jost, hairline frames, and solid white panels for the
+moments that matter: the next item, the item due now, and Go time. Today is built around a live 3D orrery
+(three.js through React Three Fiber, rendered with expo-gl on native) cast in chrome, platinum, pearl and black
+glass. Each family member orbits on their own ring, each task is a bead at its minute (tap to tick off), and a
+crystal diamond hovers for Go time. Members have finishes (Chrome, Pearl, Platinum, Gunmetal, Smoke, Onyx) instead
+of colours. The 3D code is in `src/components/three/`. Earlier looks are in git history: kente (`45d6d55`),
+broadsheet (`719242a`), Dial (`195c29d`), manga (`4de31a8`) and gold orrery (`532c8c6`).
 
 **Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single
 self-contained page with the fonts embedded. It can be hosted anywhere. When you pick the example family on the web,

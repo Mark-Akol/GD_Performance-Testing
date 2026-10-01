@@ -1,11 +1,10 @@
 import {
-  CormorantGaramond_300Light_Italic,
-  CormorantGaramond_400Regular_Italic,
-  CormorantGaramond_500Medium,
-  CormorantGaramond_600SemiBold,
+  BodoniModa_400Regular_Italic,
+  BodoniModa_700Bold,
+  BodoniModa_900Black,
   useFonts,
-} from '@expo-google-fonts/cormorant-garamond';
-import { Manrope_300Light, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold } from '@expo-google-fonts/manrope';
+} from '@expo-google-fonts/bodoni-moda';
+import { Jost_300Light, Jost_400Regular, Jost_500Medium, Jost_600SemiBold } from '@expo-google-fonts/jost';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -54,14 +53,13 @@ function NotificationBridge() {
 function Gate({ children }: { children: React.ReactNode }) {
   const { ready } = useAkol();
   const [fontsLoaded] = useFonts({
-    CormorantGaramond_300Light_Italic,
-    CormorantGaramond_400Regular_Italic,
-    CormorantGaramond_500Medium,
-    CormorantGaramond_600SemiBold,
-    Manrope_300Light,
-    Manrope_400Regular,
-    Manrope_500Medium,
-    Manrope_600SemiBold,
+    BodoniModa_400Regular_Italic,
+    BodoniModa_700Bold,
+    BodoniModa_900Black,
+    Jost_300Light,
+    Jost_400Regular,
+    Jost_500Medium,
+    Jost_600SemiBold,
   });
   if (!ready || !fontsLoaded) {
     return (

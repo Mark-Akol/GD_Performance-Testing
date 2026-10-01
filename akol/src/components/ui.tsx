@@ -36,57 +36,11 @@ export function tap(kind: 'light' | 'medium' | 'success' = 'light') {
 /** Glass needs something behind it: on web, blur what's underneath. */
 const glassBlur: ViewStyle = Platform.OS === 'web' ? ({ backdropFilter: 'blur(18px) saturate(140%)' } as ViewStyle) : {};
 
-/** A soft radial glow built from stacked circles (no blur filter needed on native). */
-function Glow({ size, color, style }: { size: number; color: string; style?: StyleProp<ViewStyle> }) {
-  const rings = 16;
-  return (
-    <View style={[{ position: 'absolute', width: size, height: size }, style]} pointerEvents="none">
-      {Array.from({ length: rings }).map((_, i) => {
-        const s = size * (1 - i / rings);
-        return (
-          <View
-            key={i}
-            style={{
-              position: 'absolute',
-              left: (size - s) / 2,
-              top: (size - s) / 2,
-              width: s,
-              height: s,
-              borderRadius: s / 2,
-              backgroundColor: color,
-              opacity: 0.014,
-            }}
-          />
-        );
-      })}
-    </View>
-  );
-}
-
-/** Slowly drifting gold and lilac light behind every page, for depth. */
+/** Pure black behind every page. */
 export function Ambient() {
-  const drift = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(drift, { toValue: 1, duration: 9000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(drift, { toValue: 0, duration: 9000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [drift]);
-  const a = drift.interpolate({ inputRange: [0, 1], outputRange: [0, 40] });
-  const b = drift.interpolate({ inputRange: [0, 1], outputRange: [0, -50] });
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <LinearGradient colors={gradients.page} style={StyleSheet.absoluteFill} />
-      <Animated.View style={{ position: 'absolute', right: -160, top: -140, transform: [{ translateY: a }] }}>
-        <Glow size={520} color={colors.ink} />
-      </Animated.View>
-      <Animated.View style={{ position: 'absolute', left: -220, top: 380, transform: [{ translateX: b }] }}>
-        <Glow size={560} color={colors.lilac} />
-      </Animated.View>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]} />
     </View>
   );
 }
@@ -178,7 +132,7 @@ export function Card({
     <View style={[styles.cardFrame, glow && styles.cardGlow, outer]}>
       <LinearGradient colors={gradients.card} start={{ x: 0, y: 0 }} end={{ x: 0.4, y: 1 }} style={StyleSheet.absoluteFill} />
       <LinearGradient
-        colors={['rgba(255,236,200,0)', glow ? 'rgba(255,226,170,0.7)' : 'rgba(255,236,200,0.35)', 'rgba(255,236,200,0)']}
+        colors={['rgba(255,255,255,0)', glow ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0)']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.cardEdge}
@@ -357,7 +311,7 @@ export function Segmented<T extends string>({
           >
             {active ? (
               <LinearGradient colors={gradients.ink} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.segmentActive}>
-                <Text style={[styles.segmentText, { color: '#1A1206' }]}>{o.label}</Text>
+                <Text style={[styles.segmentText, { color: colors.onPaper }]}>{o.label}</Text>
               </LinearGradient>
             ) : (
               <View style={styles.segmentActive}>
@@ -378,7 +332,7 @@ export function SectionHeader({ title, right }: { title: string; right?: ReactNo
         <Dingbat />
         <Eyebrow>{title}</Eyebrow>
         <LinearGradient
-          colors={['rgba(232,199,138,0.45)', 'rgba(232,199,138,0)']}
+          colors={['rgba(255,255,255,0.6)', 'rgba(255,255,255,0)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.sectionLine}
@@ -425,7 +379,7 @@ export function ConfirmHost() {
     <Modal visible={!!req} transparent animationType="fade" onRequestClose={close}>
       <Pressable style={[styles.scrim, glassBlur]} onPress={close}>
         <Pressable style={styles.dialog} onPress={() => {}}>
-          <LinearGradient colors={['#1B1726', '#0E0C14']} style={StyleSheet.absoluteFill} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]} />
           <View style={styles.dialogBody}>
             <Fleuron style={{ width: 120 }} />
             <Text style={styles.dialogTitle}>{req?.title}</Text>
@@ -493,10 +447,10 @@ export function InkSwitch({ value, onValueChange }: { value: boolean; onValueCha
         tap();
         onValueChange(v);
       }}
-      trackColor={{ false: 'rgba(255,255,255,0.12)', true: colors.inkDeep }}
-      thumbColor={value ? '#FFE9BD' : '#8E8898'}
+      trackColor={{ false: 'rgba(255,255,255,0.16)', true: colors.ink }}
+      thumbColor={value ? colors.onPaper : '#8A8A8A'}
       // react-native-web ignores thumbColor for the "on" state.
-      {...({ activeThumbColor: '#FFE9BD' } as object)}
+      {...({ activeThumbColor: colors.onPaper } as object)}
       ios_backgroundColor="rgba(255,255,255,0.12)"
     />
   );
@@ -505,7 +459,7 @@ export function InkSwitch({ value, onValueChange }: { value: boolean; onValueCha
 export const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  display: { fontFamily: fonts.display, fontSize: 42, lineHeight: 46, color: colors.text, letterSpacing: -0.5 },
+  display: { fontFamily: fonts.display, fontSize: 46, lineHeight: 50, color: colors.text, letterSpacing: -1 },
   title: { fontFamily: fonts.display, fontSize: 24, lineHeight: 30, color: colors.text },
   body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.text },
   dim: { color: colors.textDim },
@@ -521,25 +475,13 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hairline,
     overflow: 'hidden',
-    backgroundColor: 'rgba(16,14,22,0.55)',
+    backgroundColor: colors.bg,
     ...glassBlur,
   },
-  cardGlow: {
-    borderColor: colors.hairlineStrong,
-    shadowColor: colors.ink,
-    shadowOpacity: 0.25,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 10 },
-  },
+  cardGlow: { borderColor: colors.hairlineStrong, borderWidth: 1.5 },
   cardEdge: { position: 'absolute', top: 0, left: 24, right: 24, height: 1 },
   card: { padding: space.lg },
-  goldWrap: {
-    borderRadius: radius.pill,
-    shadowColor: colors.ink,
-    shadowOpacity: 0.45,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 8 },
-  },
+  goldWrap: { borderRadius: radius.pill },
   goldBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -550,7 +492,7 @@ export const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  goldBtnText: { fontFamily: fonts.semibold, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: '#1A1206' },
+  goldBtnText: { fontFamily: fonts.semibold, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: colors.onPaper },
   ghostBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -560,7 +502,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     borderRadius: radius.pill,
     borderWidth: 1,
-    backgroundColor: 'rgba(255,250,240,0.04)',
+    backgroundColor: colors.bg,
   },
   ghostBtnText: { fontFamily: fonts.semibold, fontSize: 12.5, letterSpacing: 1.8, textTransform: 'uppercase' },
   chip: {
@@ -572,7 +514,7 @@ export const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.hairline,
-    backgroundColor: 'rgba(255,250,240,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   chipText: { fontFamily: fonts.medium, fontSize: 13, color: colors.textDim },
   segment: {
@@ -581,7 +523,7 @@ export const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.hairline,
-    backgroundColor: 'rgba(255,250,240,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   segmentItem: { flex: 1 },
   segmentActive: { borderRadius: radius.pill, paddingVertical: 11, alignItems: 'center' },
@@ -608,7 +550,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hairline,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255,250,240,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     paddingHorizontal: space.lg,
     paddingVertical: 14,
   },

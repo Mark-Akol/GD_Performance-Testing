@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -27,7 +26,7 @@ import {
 } from '../../lib/schedule';
 import { useAkol, useNow } from '../../lib/store';
 import type { Task } from '../../lib/types';
-import { colors, fonts, gradients, lining, radius, space } from '../../theme';
+import { colors, fonts, lining, radius, space } from '../../theme';
 
 type Scope = 'mine' | 'family';
 
@@ -129,7 +128,9 @@ export default function Today() {
 
       <FadeIn delay={120}>
         <Text style={styles.greeting}>{greeting(now)},</Text>
-        <Text style={styles.name}>{me?.name ?? 'there'}</Text>
+        <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit>
+          {(me?.name ?? 'there').toUpperCase()}.
+        </Text>
       </FadeIn>
 
       {/* The orrery */}
@@ -184,28 +185,30 @@ export default function Today() {
 
       {/* Next up */}
       <FadeIn delay={360}>
-        <Card glow style={{ marginTop: space.lg }}>
-          <Text style={styles.nextLabel}>{allDone ? 'All complete' : next ? (next.status === 'due' ? 'Due now' : 'Next up') : 'Today'}</Text>
+        <View style={styles.lead}>
+          <View style={styles.leadTop}>
+            <Text style={styles.nextLabel}>{allDone ? 'All complete' : next ? (next.status === 'due' ? 'Due now' : 'Next') : 'Today'}</Text>
+            {next && !allDone && <Text style={styles.nextLabel}>{relative(atTime(now, next.task.time), now)}</Text>}
+          </View>
           <Text style={styles.nextTitle}>
-            {allDone ? 'Beautifully done.' : next ? next.task.title : p.total ? 'Nothing further today.' : 'A quiet day.'}
+            {allDone ? 'Beautifully done.' : next ? `${next.task.title}.` : p.total ? 'Nothing further.' : 'A quiet day.'}
           </Text>
           {next && !allDone && (
             <View style={styles.nextMeta}>
-              <LinearGradient colors={gradients.ink} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.timePill}>
+              <View style={styles.timePill}>
                 <Text style={styles.timePillText}>{formatTime(next.task.time)}</Text>
-              </LinearGradient>
-              <Text style={styles.nextRel}>{relative(atTime(now, next.task.time), now)}</Text>
-              {nextWho && <Text style={styles.nextWho}>· {nextWho}</Text>}
+              </View>
+              {nextWho && <Text style={styles.nextWho}>{nextWho}</Text>}
             </View>
           )}
           <View style={styles.stats}>
             <Stat value={`${p.done}/${p.total}`} label="Done" />
             <View style={styles.statRule} />
-            <Stat value={String(late.length)} label="Late" warn={late.length > 0} />
+            <Stat value={String(late.length)} label="Late" />
             <View style={styles.statRule} />
             <Stat value={`${Math.round(p.ratio * 100)}%`} label="Complete" />
           </View>
-        </Card>
+        </View>
       </FadeIn>
 
       <FadeIn delay={460} style={{ marginTop: space.xl }}>
@@ -248,10 +251,10 @@ export default function Today() {
   );
 }
 
-function Stat({ value, label, warn }: { value: string; label: string; warn?: boolean }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={styles.stat}>
-      <Text style={[styles.statValue, warn && { color: colors.danger }]}>{value}</Text>
+      <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -267,15 +270,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderWidth: 1,
     borderColor: colors.hairline,
-    backgroundColor: 'rgba(255,250,240,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   demoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.ink },
   demoText: { fontFamily: fonts.medium, fontSize: 11, color: colors.textDim },
-  greeting: { fontFamily: fonts.italic, fontSize: 28, lineHeight: 34, color: colors.textDim, marginTop: space.lg },
-  name: { fontFamily: fonts.masthead, fontSize: 76, lineHeight: 80, color: colors.ink, letterSpacing: -1 },
+  greeting: { fontFamily: fonts.italic, fontSize: 26, lineHeight: 32, color: colors.textDim, marginTop: space.xl },
+  name: { fontFamily: fonts.display, fontSize: 92, lineHeight: 96, color: colors.text, letterSpacing: -4 },
   orreryWrap: { marginHorizontal: -18, marginTop: -space.md },
   orreryHead: {
     position: 'absolute',
@@ -298,30 +301,25 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.hairline,
-    backgroundColor: 'rgba(16,14,22,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   legendDot: { width: 8, height: 8, borderRadius: 4, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
   legendName: { fontFamily: fonts.medium, fontSize: 13, color: colors.text },
   legendCount: { fontFamily: fonts.italic, fontSize: 15, color: colors.textDim, ...lining },
   hint: { fontFamily: fonts.light, fontSize: 12, color: colors.textFaint, textAlign: 'center', marginTop: space.sm },
-  nextLabel: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 3, textTransform: 'uppercase', color: colors.ink },
-  nextTitle: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, color: colors.text, marginTop: space.xs },
+  lead: { backgroundColor: colors.ink, padding: space.xl, marginTop: space.lg },
+  leadTop: { flexDirection: 'row', justifyContent: 'space-between' },
+  nextLabel: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 3, textTransform: 'uppercase', color: colors.onPaper },
+  nextTitle: { fontFamily: fonts.display, fontSize: 44, lineHeight: 46, letterSpacing: -1.5, color: colors.onPaper, marginTop: space.sm, textTransform: 'uppercase' },
   nextMeta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.md, flexWrap: 'wrap' },
-  timePill: { borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 },
-  timePillText: { fontFamily: fonts.semibold, fontSize: 13, color: '#1A1206', ...lining },
-  nextRel: { fontFamily: fonts.italic, fontSize: 18, color: colors.ink },
-  nextWho: { fontFamily: fonts.medium, fontSize: 14, color: colors.textDim },
-  stats: {
-    flexDirection: 'row',
-    marginTop: space.lg,
-    paddingTop: space.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.hairline,
-  },
+  timePill: { borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 5, backgroundColor: colors.onPaper },
+  timePillText: { fontFamily: fonts.semibold, fontSize: 13, letterSpacing: 1, color: colors.ink, ...lining },
+  nextWho: { fontFamily: fonts.italic, fontSize: 20, color: colors.onPaper },
+  stats: { flexDirection: 'row', marginTop: space.xl, paddingTop: space.md, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.15)' },
   stat: { flex: 1, alignItems: 'center' },
-  statRule: { width: 1, backgroundColor: colors.hairline },
-  statValue: { fontFamily: fonts.display, fontSize: 30, color: colors.text, ...lining },
-  statLabel: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 2.4, textTransform: 'uppercase', color: colors.textDim },
+  statRule: { width: 1, backgroundColor: 'rgba(0,0,0,0.15)' },
+  statValue: { fontFamily: fonts.display, fontSize: 34, letterSpacing: -1, color: colors.onPaper, ...lining },
+  statLabel: { fontFamily: fonts.semibold, fontSize: 9.5, letterSpacing: 2.6, textTransform: 'uppercase', color: 'rgba(0,0,0,0.55)' },
   groupCount: { fontFamily: fonts.italic, fontSize: 16, color: colors.ink, ...lining },
   quiet: { fontFamily: fonts.masthead, fontSize: 36, color: colors.text },
   tip: { textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint },

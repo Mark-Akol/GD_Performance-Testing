@@ -17,7 +17,7 @@ export function ProgressRing({
   stroke = 3,
   ratio,
   color = colors.ink,
-  track = 'rgba(255,236,200,0.12)',
+  track = 'rgba(255,255,255,0.12)',
 }: {
   size: number;
   stroke?: number;
@@ -55,6 +55,12 @@ export function ProgressRing({
       )}
     </Svg>
   );
+}
+
+/** Light letters on dark finishes (onyx, gunmetal), black on bright ones. */
+function isDark(hex: string) {
+  const n = parseInt(hex.slice(1), 16);
+  return ((n >> 16) & 255) * 0.3 + ((n >> 8) & 255) * 0.59 + (n & 255) * 0.11 < 140;
 }
 
 /** A polished gem badge in the member's metal or stone. With `ratio`, ringed by progress. */
@@ -110,7 +116,7 @@ export function Avatar({
               transform: [{ rotate: '-25deg' }],
             }}
           />
-          <Text style={{ fontSize: inner * 0.5, fontFamily: fonts.displayBold, color: '#1A1206' }}>{label}</Text>
+          <Text style={{ fontSize: inner * 0.5, fontFamily: fonts.displayBold, color: isDark(j.base) ? '#FFFFFF' : '#000000' }}>{label}</Text>
         </LinearGradient>
       </View>
     </View>

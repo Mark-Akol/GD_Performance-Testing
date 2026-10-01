@@ -55,23 +55,23 @@ function Core({ intensity = 1 }: { intensity?: number }) {
     <group>
       <mesh>
         <sphereGeometry args={[0.38, 64, 64]} />
-        <meshStandardMaterial color="#F0C06A" emissive="#D9993A" emissiveIntensity={0.55 * intensity} roughness={0.28} metalness={0.85} envMapIntensity={1.8} />
+        <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={0.08 * intensity} roughness={0.06} metalness={1} envMapIntensity={2.2} />
       </mesh>
       <group ref={halo}>
         {[1.35, 2.1, 3.4].map((k, i) => (
           <mesh key={k} scale={k}>
             <sphereGeometry args={[0.38, 32, 32]} />
             <meshBasicMaterial
-              color="#FFD58A"
+              color="#FFFFFF"
               transparent
-              opacity={[0.1, 0.045, 0.02][i] * intensity}
+              opacity={[0.06, 0.03, 0.014][i] * intensity}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
             />
           </mesh>
         ))}
       </group>
-      <pointLight color="#FFD58A" intensity={8 * intensity} distance={7} decay={1.6} />
+      <pointLight color="#FFFFFF" intensity={5 * intensity} distance={7} decay={1.6} />
     </group>
   );
 }
@@ -84,9 +84,10 @@ function BeadMesh({ bead, radius, hex, metal, onToggle }: { bead: Bead; radius: 
     const pulse = bead.due && !bead.done ? 1 + Math.sin(clock.elapsedTime * 5) * 0.25 : 1;
     ref.current.scale.setScalar(pulse);
   });
-  const color = bead.done ? hex : bead.late ? '#3A1720' : '#1B1724';
-  const emissive = bead.done ? hex : bead.due ? '#FFF1D2' : bead.late ? '#C4475A' : '#000000';
-  const emissiveIntensity = bead.done ? 0.9 : bead.due ? 0.8 : bead.late ? 0.35 : 0;
+  // Black glass when open, polished in the member's finish when done, lit white when due now.
+  const color = bead.done ? hex : bead.late ? '#3A3A3A' : '#050505';
+  const emissive = bead.done ? hex : bead.due ? '#FFFFFF' : '#000000';
+  const emissiveIntensity = bead.done ? 0.35 : bead.due ? 0.9 : 0;
   return (
     <group position={[Math.cos(a) * radius, Math.sin(a) * radius, 0]}>
       <mesh ref={ref}>
@@ -169,9 +170,9 @@ export function Diamond({ ratio, position = [0, 0, 0], scale = 1 }: { ratio: num
     <mesh ref={ref} position={position} scale={[scale * 0.8, scale * 1.15, scale * 0.8]}>
       <octahedronGeometry args={[0.3, 0]} />
       <meshStandardMaterial
-        color={complete ? '#FFE3A8' : '#C9A56A'}
-        emissive={complete ? '#E8B866' : '#E8C78A'}
-        emissiveIntensity={complete ? 0.8 : 0.08 + ratio * 0.45}
+        color="#FFFFFF"
+        emissive="#FFFFFF"
+        emissiveIntensity={complete ? 0.6 : 0.02 + ratio * 0.3}
         metalness={1}
         roughness={0.06}
         flatShading
@@ -192,7 +193,7 @@ function Armillary() {
       ].map((b, i) => (
         <mesh key={i} rotation={b.rot}>
           <torusGeometry args={[b.r, 0.006, 8, 300]} />
-          <meshStandardMaterial color="#E8C78A" metalness={1} roughness={0.25} transparent opacity={0.35} />
+          <meshStandardMaterial color="#FFFFFF" metalness={1} roughness={0.2} transparent opacity={0.3} />
         </mesh>
       ))}
     </group>
@@ -223,7 +224,7 @@ function Dust({ count = 420 }: { count?: number }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.028} color="#FFE9BD" transparent opacity={0.75} sizeAttenuation depthWrite={false} />
+      <pointsMaterial size={0.024} color="#FFFFFF" transparent opacity={0.6} sizeAttenuation depthWrite={false} />
     </points>
   );
 }
@@ -249,8 +250,8 @@ function Lights() {
   return (
     <>
       <ambientLight intensity={0.25} />
-      <directionalLight position={[3, 4, 5]} intensity={1.6} color="#FFE7C2" />
-      <directionalLight position={[-4, -2, -3]} intensity={1.1} color="#9C8CFF" />
+      <directionalLight position={[3, 4, 5]} intensity={1.8} color="#FFFFFF" />
+      <directionalLight position={[-4, -2, -3]} intensity={0.9} color="#FFFFFF" />
     </>
   );
 }
@@ -321,7 +322,7 @@ export function DiamondScene({ ratio, size = 120 }: { ratio: number; size?: numb
       >
         <StudioEnvironment />
         <Lights />
-        <pointLight position={[0, -0.8, 1]} intensity={3} color="#FFD58A" />
+        <pointLight position={[0, -0.8, 1]} intensity={3} color="#FFFFFF" />
         <Diamond ratio={ratio} scale={1.4} />
       </Canvas>
     </View>
