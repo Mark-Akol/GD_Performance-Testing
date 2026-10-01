@@ -330,7 +330,7 @@ export function SectionHeader({ title, right }: { title: string; right?: ReactNo
     <View style={styles.sectionWrap}>
       <View style={styles.sectionHeader}>
         <Dingbat />
-        <Eyebrow>{title}</Eyebrow>
+        <Text style={styles.sectionTitle}>{title}</Text>
         <LinearGradient
           colors={['rgba(255,255,255,0.6)', 'rgba(255,255,255,0)']}
           start={{ x: 0, y: 0 }}
@@ -459,7 +459,8 @@ export function InkSwitch({ value, onValueChange }: { value: boolean; onValueCha
 export const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  display: { fontFamily: fonts.display, fontSize: 46, lineHeight: 50, color: colors.text, letterSpacing: -1 },
+  display: { fontFamily: fonts.display, fontSize: 56, lineHeight: 64, color: colors.text, letterSpacing: 1, textTransform: 'uppercase' },
+  sectionTitle: { fontFamily: fonts.display, fontSize: 22, letterSpacing: 1.5, color: colors.text, textTransform: 'uppercase' },
   title: { fontFamily: fonts.display, fontSize: 24, lineHeight: 30, color: colors.text },
   body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.text },
   dim: { color: colors.textDim },
@@ -492,7 +493,7 @@ export const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  goldBtnText: { fontFamily: fonts.semibold, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: colors.onPaper },
+  goldBtnText: { fontFamily: fonts.display, fontSize: 17, letterSpacing: 2, textTransform: 'uppercase', color: colors.onPaper },
   ghostBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -504,7 +505,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: colors.bg,
   },
-  ghostBtnText: { fontFamily: fonts.semibold, fontSize: 12.5, letterSpacing: 1.8, textTransform: 'uppercase' },
+  ghostBtnText: { fontFamily: fonts.display, fontSize: 16, letterSpacing: 2, textTransform: 'uppercase' },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -527,7 +528,7 @@ export const styles = StyleSheet.create({
   },
   segmentItem: { flex: 1 },
   segmentActive: { borderRadius: radius.pill, paddingVertical: 11, alignItems: 'center' },
-  segmentText: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.textDim },
+  segmentText: { fontFamily: fonts.display, fontSize: 15, letterSpacing: 1.8, textTransform: 'uppercase', color: colors.textDim },
   sectionWrap: { marginTop: space.xxl, marginBottom: space.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   sectionLine: { flex: 1, height: 1 },
@@ -541,7 +542,7 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   dialogBody: { padding: space.xl, alignItems: 'center', gap: space.md },
-  dialogTitle: { fontFamily: fonts.display, fontSize: 28, color: colors.text, textAlign: 'center' },
+  dialogTitle: { fontFamily: fonts.display, fontSize: 30, color: colors.text, textAlign: 'center', textTransform: 'uppercase' },
   dialogActions: { flexDirection: 'row', gap: space.md, marginTop: space.sm, alignSelf: 'stretch' },
   field: {
     fontFamily: fonts.body,

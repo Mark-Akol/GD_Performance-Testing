@@ -1,43 +1,39 @@
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-import { jewelFor } from '../components/Avatar';
 import { Fleuron } from '../components/Rules';
-import { Orrery, type OrbitRing } from '../components/three/Orrery';
+import { Vinyl } from '../components/Vinyl';
 import { Card, FadeIn, Field, GhostButton, InkButton, Screen } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
-import { parseTime } from '../lib/schedule';
 import { exampleFamily, freshFamily } from '../lib/seed';
 import { useAkol } from '../lib/store';
 import { colors, fonts, space } from '../theme';
 
-/** First run: the orrery turning in the dark, the name in gold, and one question. */
+/** A preview pressing of the school morning: five tracks played, one on now. */
+const PREVIEW = [
+  { id: 'a', done: true },
+  { id: 'b', done: true },
+  { id: 'c', done: true },
+  { id: 'd', done: true },
+  { id: 'e', done: true },
+  { id: 'f', done: false, due: true },
+  { id: 'g', done: false },
+  { id: 'h', done: false },
+  { id: 'i', done: false },
+];
+
+const LINER_NOTES: [string, string, string][] = [
+  ['01', 'A tracklist for everyone', 'Your list, the kids’ lists, and the whole crew on one record.'],
+  ['02', 'Every track on time', '6:45 pack lunch. 6:55 bags in the car. 7:00 tune the GPS.'],
+  ['03', 'Showtime', 'At go time Akol asks if the whole crew is ready, and calls out what isn’t.'],
+];
+
+/** First run, set like an album cover. */
 export default function Welcome() {
   const { dispatch } = useAkol();
+  const { width } = useWindowDimensions();
   const [name, setName] = useState('');
-
-  // A frozen school morning at 6:48 a.m. to show the orrery in use.
-  const preview = useMemo(() => {
-    const s = exampleFamily();
-    const school = s.tasks.filter((t) => t.routineId === 'r_school');
-    const mins = school.map((t) => parseTime(t.time));
-    const from = Math.min(...mins) - 10;
-    const to = Math.max(...mins) + 10;
-    const done = new Set(['t_mk_coffee', 't_ra_up', 't_ra_teeth', 't_mk_breakfast', 't_ra_dress']);
-    const rings: OrbitRing[] = s.members.map((m) => {
-      const j = jewelFor(m, m.id);
-      return {
-        id: m.id,
-        hex: j.hex,
-        metal: j.metal,
-        beads: school
-          .filter((t) => t.memberId === m.id && !t.checkpoint)
-          .map((t) => ({ id: t.id, frac: (parseTime(t.time) - from) / (to - from), done: done.has(t.id), due: t.id === 't_ra_lunch' })),
-      };
-    });
-    return { rings, nowFrac: (6 * 60 + 48 - from) / (to - from) };
-  }, []);
 
   const start = async (example: boolean) => {
     const parent = name.trim() || 'Mark';
@@ -54,34 +50,32 @@ export default function Welcome() {
 
   return (
     <Screen contentStyle={{ paddingBottom: 60 }}>
-      <FadeIn style={styles.stage}>
-        <Orrery rings={preview.rings} nowFrac={preview.nowFrac} checkpointRatio={5 / 11} height={440} autoOrbit={0.12} />
-        <View style={styles.titleBlock} pointerEvents="none">
-          <Text style={styles.word}>AKOL</Text>
-          <Text style={styles.tag}>The family, on time</Text>
+      <FadeIn>
+        <View style={styles.coverTop}>
+          <Text style={styles.small}>Vol. 1</Text>
+          <Text style={styles.small}>The family, on time</Text>
         </View>
+        <Text style={styles.word}>AKOL</Text>
+        <Text style={styles.tag}>the family, on time</Text>
+      </FadeIn>
+
+      <FadeIn delay={150} style={{ marginTop: space.lg }}>
+        <Vinyl tracks={PREVIEW} title="School Morning" nowFrac={0.5} size={Math.min(width - 70, 320)} />
       </FadeIn>
 
       <FadeIn delay={300}>
-        <Text style={styles.lede}>
-          Each person in your family is an orbit of chrome, platinum or pearl. Each task is a jewel at its minute. At go
-          time the diamond asks if everything is done.
-        </Text>
+        <Text style={styles.lede}>Your day is a record. Every task is a track. Akol keeps the whole crew on beat.</Text>
       </FadeIn>
 
       <View style={{ gap: space.md, marginTop: space.xl }}>
-        {[
-          ['A checklist for everyone', 'Your list, your children’s lists, and the whole family at a glance.'],
-          ['Reminders to the minute', '6:45 pack lunch. 6:55 bags in the car. 7:00 tune the GPS.'],
-          ['Go time', 'Akol asks whether everything is done, and shows exactly what isn’t.'],
-        ].map(([h, b], i) => (
-          <FadeIn key={h} delay={420 + i * 110}>
+        {LINER_NOTES.map(([n, h, b], i) => (
+          <FadeIn key={n} delay={420 + i * 110}>
             <Card>
-              <View style={styles.feature}>
-                <Text style={styles.featureNum}>{['i', 'ii', 'iii'][i]}</Text>
+              <View style={styles.note}>
+                <Text style={styles.noteNum}>{n}</Text>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={styles.featureHead}>{h}</Text>
-                  <Text style={styles.featureBody}>{b}</Text>
+                  <Text style={styles.noteHead}>{h}</Text>
+                  <Text style={styles.noteBody}>{b}</Text>
                 </View>
               </View>
             </Card>
@@ -91,11 +85,11 @@ export default function Welcome() {
 
       <Fleuron style={{ marginVertical: space.xl }} />
 
-      <FadeIn delay={800}>
+      <FadeIn delay={780}>
         <Field label="Your name" value={name} onChangeText={setName} placeholder="Mark" returnKeyType="done" />
         <View style={{ gap: space.md, marginTop: space.xl }}>
-          <InkButton label="Begin with the example family" onPress={() => start(true)} />
-          <GhostButton label="Start from a blank page" onPress={() => start(false)} />
+          <InkButton label="Drop the needle ▶" onPress={() => start(true)} />
+          <GhostButton label="Start a blank record" onPress={() => start(false)} />
         </View>
         <Text style={styles.fine}>Private by design. Everything stays on this device.</Text>
       </FadeIn>
@@ -104,34 +98,38 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  stage: { marginHorizontal: -18, marginTop: -space.lg },
-  titleBlock: { position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center' },
+  coverTop: { flexDirection: 'row', justifyContent: 'space-between' },
+  small: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.text },
   word: {
-    fontFamily: fonts.masthead,
-    fontSize: 104,
-    lineHeight: 110,
-    color: colors.text,
-    letterSpacing: -3,
-  },
-  tag: {
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    letterSpacing: 5,
-    textTransform: 'uppercase',
-    color: colors.ink,
-    marginTop: -4,
-  },
-  lede: {
-    fontFamily: fonts.italic,
-    fontSize: 22,
-    lineHeight: 30,
+    fontFamily: fonts.display,
+    fontSize: 150,
+    lineHeight: 168,
+    letterSpacing: 2,
     color: colors.text,
     textAlign: 'center',
+    marginTop: space.md,
+  },
+  tag: {
+    fontFamily: fonts.italic,
+    fontSize: 26,
+    color: colors.text,
+    textAlign: 'center',
+    marginTop: -18,
+    transform: [{ rotate: '-4deg' }],
+  },
+  lede: {
+    fontFamily: fonts.display,
+    fontSize: 30,
+    lineHeight: 38,
+    letterSpacing: 0.5,
+    color: colors.text,
+    textAlign: 'center',
+    textTransform: 'uppercase',
     marginTop: space.xl,
   },
-  feature: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
-  featureNum: { fontFamily: fonts.italic, fontSize: 22, color: colors.ink, width: 26 },
-  featureHead: { fontFamily: fonts.display, fontSize: 22, color: colors.text },
-  featureBody: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textDim },
-  fine: { fontFamily: fonts.light, textAlign: 'center', fontSize: 12, marginTop: space.xl, color: colors.textFaint },
+  note: { flexDirection: 'row', gap: space.lg, alignItems: 'flex-start' },
+  noteNum: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, color: colors.text, width: 40 },
+  noteHead: { fontFamily: fonts.display, fontSize: 21, letterSpacing: 0.8, color: colors.text, textTransform: 'uppercase' },
+  noteBody: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.textDim },
+  fine: { fontFamily: fonts.light, textAlign: 'center', fontSize: 13, marginTop: space.xl, color: colors.textFaint },
 });

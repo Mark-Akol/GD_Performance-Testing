@@ -1,9 +1,9 @@
 import type { JewelKey } from '../lib/types';
 
 /**
- * Akol "Maison": black and white only, set bold. Pure black ground, white type in a heavy
- * Didone, hairline frames, and solid white panels for the moments that matter. The 3D orrery
- * is rendered in chrome, platinum, black glass and pearl.
+ * Akol "Side A": black and white, hip hop. The day is a record: routines are records, tasks
+ * are tracks, the tonearm is now and Go time is showtime. Condensed poster type, marker tags,
+ * and solid white panels for the moments that matter.
  */
 export const colors = {
   bg: '#000000',
@@ -40,16 +40,16 @@ export const gradients = {
 export type SealStyle = 'solid' | 'outline' | 'double' | 'wash' | 'dotted' | 'heavy';
 
 /**
- * Each family member's finish, used for their ring and beads in the orrery and their
- * monogram seal. Keys are kept from earlier releases so saved data still loads.
+ * Each family member's finish (like a record's pressing: platinum, pearl, chrome...), used for
+ * their badge. Keys are kept from earlier releases so saved data still loads.
  */
 export const jewels: Record<
   JewelKey,
   { name: string; style: SealStyle; hex: string; metal: number; base: string; light: string; deep: string }
 > = {
-  sika: { name: 'Chrome', style: 'solid', hex: '#FFFFFF', metal: 1, base: '#FFFFFF', light: '#FFFFFF', deep: '#9A9A9A' },
+  sika: { name: 'Platinum', style: 'solid', hex: '#FFFFFF', metal: 1, base: '#FFFFFF', light: '#FFFFFF', deep: '#9A9A9A' },
   kente: { name: 'Pearl', style: 'outline', hex: '#ECE9E2', metal: 0.25, base: '#ECE9E2', light: '#FFFFFF', deep: '#8F8C86' },
-  adire: { name: 'Platinum', style: 'double', hex: '#D4D4D4', metal: 1, base: '#D4D4D4', light: '#FFFFFF', deep: '#7A7A7A' },
+  adire: { name: 'Chrome', style: 'double', hex: '#D4D4D4', metal: 1, base: '#D4D4D4', light: '#FFFFFF', deep: '#7A7A7A' },
   maasai: { name: 'Gunmetal', style: 'heavy', hex: '#7E7E7E', metal: 1, base: '#7E7E7E', light: '#C8C8C8', deep: '#3A3A3A' },
   terracotta: { name: 'Smoke', style: 'dotted', hex: '#A8A8A8', metal: 0.5, base: '#A8A8A8', light: '#E0E0E0', deep: '#555555' },
   malachite: { name: 'Onyx', style: 'wash', hex: '#3C3C3C', metal: 0.9, base: '#3C3C3C', light: '#9A9A9A', deep: '#111111' },
@@ -68,17 +68,18 @@ export const LEGACY_JEWELS: Record<string, JewelKey> = {
 };
 
 export const fonts = {
-  /** The heaviest Didone: the house's voice. */
-  masthead: 'BodoniModa_900Black',
-  display: 'BodoniModa_900Black',
-  displayBold: 'BodoniModa_900Black',
-  displayItalic: 'BodoniModa_400Regular_Italic',
-  displayMedium: 'BodoniModa_700Bold',
-  body: 'Jost_400Regular',
-  light: 'Jost_300Light',
-  italic: 'BodoniModa_400Regular_Italic',
-  medium: 'Jost_500Medium',
-  semibold: 'Jost_600SemiBold',
+  /** Condensed poster lettering, like a mixtape cover. */
+  masthead: 'Anton_400Regular',
+  display: 'Anton_400Regular',
+  displayBold: 'Anton_400Regular',
+  /** Hand-tagged marker for asides ("feat.", "a.m.", "ready"). */
+  displayItalic: 'PermanentMarker_400Regular',
+  displayMedium: 'ArchivoNarrow_700Bold',
+  body: 'ArchivoNarrow_500Medium',
+  light: 'ArchivoNarrow_400Regular',
+  italic: 'PermanentMarker_400Regular',
+  medium: 'ArchivoNarrow_600SemiBold',
+  semibold: 'ArchivoNarrow_700Bold',
 } as const;
 
 export const lining = { fontVariant: ['lining-nums' as const] };

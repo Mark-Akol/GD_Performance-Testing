@@ -1,10 +1,11 @@
+import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import {
-  BodoniModa_400Regular_Italic,
-  BodoniModa_700Bold,
-  BodoniModa_900Black,
-  useFonts,
-} from '@expo-google-fonts/bodoni-moda';
-import { Jost_300Light, Jost_400Regular, Jost_500Medium, Jost_600SemiBold } from '@expo-google-fonts/jost';
+  ArchivoNarrow_400Regular,
+  ArchivoNarrow_500Medium,
+  ArchivoNarrow_600SemiBold,
+  ArchivoNarrow_700Bold,
+} from '@expo-google-fonts/archivo-narrow';
+import { PermanentMarker_400Regular } from '@expo-google-fonts/permanent-marker';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -53,13 +54,12 @@ function NotificationBridge() {
 function Gate({ children }: { children: React.ReactNode }) {
   const { ready } = useAkol();
   const [fontsLoaded] = useFonts({
-    BodoniModa_400Regular_Italic,
-    BodoniModa_700Bold,
-    BodoniModa_900Black,
-    Jost_300Light,
-    Jost_400Regular,
-    Jost_500Medium,
-    Jost_600SemiBold,
+    Anton_400Regular,
+    PermanentMarker_400Regular,
+    ArchivoNarrow_400Regular,
+    ArchivoNarrow_500Medium,
+    ArchivoNarrow_600SemiBold,
+    ArchivoNarrow_700Bold,
   });
   if (!ready || !fontsLoaded) {
     return (

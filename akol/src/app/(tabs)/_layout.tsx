@@ -12,7 +12,7 @@ type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tab
 
 const TABS: { name: string; title: string }[] = [
   { name: 'index', title: 'Today' },
-  { name: 'family', title: 'Family' },
+  { name: 'family', title: 'Crew' },
   { name: 'routines', title: 'Routines' },
   { name: 'settings', title: 'Settings' },
 ];
@@ -84,6 +84,6 @@ const styles = StyleSheet.create({
   item: { flex: 1 },
   pill: { flex: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   pillActive: { backgroundColor: colors.ink },
-  label: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: colors.textDim },
+  label: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.textDim },
   labelActive: { color: colors.onPaper },
 });

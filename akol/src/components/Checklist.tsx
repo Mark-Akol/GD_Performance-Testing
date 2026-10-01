@@ -16,7 +16,6 @@ import { useAkol } from '../lib/store';
 import type { DayKey, Task } from '../lib/types';
 import { colors, fonts, lining, radius, space } from '../theme';
 import { Avatar } from './Avatar';
-import { DiamondScene } from './three/Orrery';
 import { tap } from './ui';
 
 function TimeLabel({ time, faded, onPaper }: { time: string; faded?: boolean; onPaper?: boolean }) {
@@ -46,11 +45,11 @@ function StatusMark({ status, now, time }: { status: TaskStatus; now: Date; time
   if (status === 'due')
     return (
       <View style={s.nowPill}>
-        <Text style={s.nowPillText}>Now</Text>
+        <Text style={s.nowPillText}>Now playing</Text>
       </View>
     );
   if (status === 'overdue') return <Text style={s.late}>Late · {rel.replace(' ago', '')}</Text>;
-  if (status === 'soon') return <Text style={s.soon}>{rel}</Text>;
+  if (status === 'soon') return <Text style={s.soon}>up next · {rel}</Text>;
   return null;
 }
 
@@ -92,7 +91,7 @@ export function TaskRow({
         {showMember && (
           <View style={s.byRow}>
             <Avatar member={m} memberId={task.memberId} size={16} />
-            <Text style={[s.byline, lit && { color: colors.onPaper }]}>{m ? m.name : 'Everyone'}</Text>
+            <Text style={[s.byline, lit && { color: colors.onPaper }]}>feat. {m ? m.name : 'Everyone'}</Text>
           </View>
         )}
         <Text style={[s.itemTitle, lit && { color: colors.onPaper }, done && s.itemDone]} numberOfLines={2}>
@@ -104,14 +103,27 @@ export function TaskRow({
             {!!task.note && <Text style={s.note} numberOfLines={1}>{task.note}</Text>}
           </View>
         )}
-        {lit && <Text style={s.litNote}>Due now{task.note ? ` · ${task.note}` : ''}</Text>}
+        {lit && <Text style={s.litNote}>▶ Now playing{task.note ? ` · ${task.note}` : ''}</Text>}
       </View>
       <CheckCircle done={done} onPaper={lit} />
     </Pressable>
   );
 }
 
-/** Go time: a solid white panel, heavy black type, and a crystal diamond turning in it. */
+/** A parody of the album-cover warning sticker, for the Go-time panel. */
+function AdvisorySticker() {
+  return (
+    <View style={s.sticker} accessibilityLabel="Family advisory: explicit punctuality">
+      <Text style={s.stickerTop}>FAMILY</Text>
+      <Text style={s.stickerMid}>ADVISORY</Text>
+      <View style={s.stickerBar}>
+        <Text style={s.stickerBottom}>EXPLICIT PUNCTUALITY</Text>
+      </View>
+    </View>
+  );
+}
+
+/** Go time is showtime: a solid white panel, heavy black type, and the advisory sticker. */
 export function CheckpointCard({ task, day, now, isToday = true }: { task: Task; day: DayKey; now: Date; isToday?: boolean }) {
   const { state, member, toggle, dispatch } = useAkol();
   const [showDone, setShowDone] = useState(false);
@@ -126,12 +138,12 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
     <View style={s.panel}>
       <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}>
         <View style={s.cpTop}>
-          <Text style={s.cpEyebrow}>{formatTime(task.time)}</Text>
+          <Text style={s.cpEyebrow}>Showtime · {formatTime(task.time)}</Text>
           <Text style={s.cpEyebrow}>{isToday && !summary.complete ? (reached ? 'Time is up' : until) : 'Checkpoint'}</Text>
         </View>
         <View style={s.cpHead}>
           <Text style={s.cpTitle}>{task.title}.</Text>
-          <DiamondScene ratio={ratio} size={96} />
+          <AdvisorySticker />
         </View>
         <Text style={s.cpDeck}>{summary.complete ? 'Everyone is ready. Off you go.' : (task.note ?? 'Have you completed the checklist?')}</Text>
         <View style={s.tally}>
@@ -233,18 +245,18 @@ const s = StyleSheet.create({
   },
   rowLit: { backgroundColor: colors.ink, marginHorizontal: -space.lg, paddingHorizontal: space.lg, borderBottomColor: colors.ink },
   timeCol: { width: 64, alignItems: 'flex-start' },
-  time: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, letterSpacing: -1, ...lining },
-  ampm: { fontFamily: fonts.italic, fontSize: 13, marginTop: -2 },
+  time: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, letterSpacing: 0.5, ...lining },
+  ampm: { fontFamily: fonts.italic, fontSize: 12, marginTop: -4 },
   rowBody: { flex: 1, gap: 4 },
   byRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  byline: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 2.4, textTransform: 'uppercase', color: colors.textDim },
-  itemTitle: { fontFamily: fonts.medium, fontSize: 17, lineHeight: 22, color: colors.text },
+  byline: { fontFamily: fonts.italic, fontSize: 13, color: colors.textDim },
+  itemTitle: { fontFamily: fonts.display, fontSize: 21, lineHeight: 26, letterSpacing: 0.6, color: colors.text, textTransform: 'uppercase' },
   itemDone: { color: colors.textFaint, textDecorationLine: 'line-through' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
   nowPill: { backgroundColor: colors.ink, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 2 },
   nowPillText: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: colors.onPaper },
   late: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 2, textTransform: 'uppercase', color: colors.text },
-  soon: { fontFamily: fonts.italic, fontSize: 15, color: colors.text },
+  soon: { fontFamily: fonts.italic, fontSize: 14, color: colors.text },
   note: { fontFamily: fonts.light, fontSize: 13, color: colors.textDim, flexShrink: 1 },
   litNote: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 2, textTransform: 'uppercase', color: colors.onPaper },
   check: { borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
@@ -256,15 +268,15 @@ const s = StyleSheet.create({
   cpTitle: {
     flex: 1,
     fontFamily: fonts.display,
-    fontSize: 60,
-    lineHeight: 62,
-    letterSpacing: -2,
+    fontSize: 64,
+    lineHeight: 70,
+    letterSpacing: 0.5,
     color: colors.onPaper,
     textTransform: 'uppercase',
   },
-  cpDeck: { fontFamily: fonts.italic, fontSize: 20, lineHeight: 26, color: colors.onPaper, marginTop: space.xs },
+  cpDeck: { fontFamily: fonts.italic, fontSize: 19, lineHeight: 26, color: colors.onPaper, marginTop: space.xs, transform: [{ rotate: '-1.5deg' }] },
   tally: { flexDirection: 'row', alignItems: 'baseline', marginTop: space.lg },
-  cpCount: { fontFamily: fonts.display, fontSize: 72, lineHeight: 76, letterSpacing: -3, color: colors.onPaper, ...lining },
+  cpCount: { fontFamily: fonts.display, fontSize: 76, lineHeight: 84, color: colors.onPaper, ...lining },
   cpOf: { fontFamily: fonts.display, fontSize: 30, color: 'rgba(0,0,0,0.35)', ...lining },
   cpReady: { fontFamily: fonts.italic, fontSize: 22, color: colors.onPaper, marginLeft: space.sm },
   meter: { height: 3, backgroundColor: 'rgba(0,0,0,0.12)', marginTop: space.sm },
@@ -278,6 +290,11 @@ const s = StyleSheet.create({
     borderBottomColor: 'rgba(0,0,0,0.14)',
   },
   cpTime: { fontFamily: fonts.display, fontSize: 18, color: colors.onPaper, width: 48, ...lining },
+  sticker: { borderWidth: 2, borderColor: colors.onPaper, width: 104, alignItems: 'center', paddingTop: 4, transform: [{ rotate: '6deg' }] },
+  stickerTop: { fontFamily: fonts.display, fontSize: 15, letterSpacing: 2, color: colors.onPaper },
+  stickerMid: { fontFamily: fonts.display, fontSize: 19, letterSpacing: 1, color: colors.onPaper, marginTop: -4 },
+  stickerBar: { alignSelf: 'stretch', backgroundColor: colors.onPaper, marginTop: 3, paddingVertical: 3, alignItems: 'center' },
+  stickerBottom: { fontFamily: fonts.semibold, fontSize: 7.5, letterSpacing: 1, color: colors.ink },
   cpItemText: { flex: 1, fontFamily: fonts.medium, fontSize: 15, color: colors.onPaper },
   cpWho: { fontFamily: fonts.italic, fontSize: 15, color: 'rgba(0,0,0,0.55)' },
   allDone: {
