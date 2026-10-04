@@ -19,14 +19,12 @@ shows everyone's open items.
   <img src="docs/screenshots/family.png" width="200" alt="Family overview" />
 </p>
 
-**Design: Side A.** Black and white, hip hop. The family's day is a record. Each routine is a record (*Side A ·
-School Morning*), each task is a track, and the family is the crew. Today centres on a spinning vinyl LP drawn in
-SVG (`src/components/Vinyl.tsx`): tracks are cut into it outermost first, played tracks shine, the one due now is lit,
-and the tonearm sits on the current time. The next task is billed *Now playing / Up next* with *feat. Ra*. Go time is
-*Showtime*, a white panel with a "Family Advisory: Explicit Punctuality" sticker. Type is Anton for poster lettering,
-Permanent Marker for hand-tagged asides, and Archivo Narrow for body text. Earlier looks are in git history: kente
-(`45d6d55`), broadsheet (`719242a`), Dial (`195c29d`), manga (`4de31a8`), gold orrery (`532c8c6`) and Maison
-(`77c5f29`).
+**Design: Side A.** Black and white, hip hop. Tasks are tracks and the family is the crew. The next task is billed
+*Now playing / Up next* in a solid white panel, credited *feat. Ra*. Go time is *Showtime*, a white panel with a
+"Family Advisory: Explicit Punctuality" sticker. Type is Anton for poster lettering, Permanent Marker for
+hand-tagged asides, and Archivo Narrow for body text. Earlier looks are in git history: kente (`45d6d55`),
+broadsheet (`719242a`), Dial (`195c29d`), manga (`4de31a8`), gold orrery (`532c8c6`), Maison (`77c5f29`) and Side A
+with a spinning record (`bdd2e44`).
 
 **Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single
 self-contained page with the fonts embedded. It can be hosted anywhere. When you pick the example family on the web,

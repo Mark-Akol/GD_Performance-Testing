@@ -1,9 +1,9 @@
 import type { JewelKey } from '../lib/types';
 
 /**
- * Akol "Side A": black and white, hip hop. The day is a record: routines are records, tasks
- * are tracks, the tonearm is now and Go time is showtime. Condensed poster type, marker tags,
- * and solid white panels for the moments that matter.
+ * Akol "Side A": black and white, hip hop. Tasks are tracks, the family is the crew and Go time
+ * is showtime. Condensed poster type, marker tags, and solid white panels for the moments
+ * that matter.
  */
 export const colors = {
   bg: '#000000',

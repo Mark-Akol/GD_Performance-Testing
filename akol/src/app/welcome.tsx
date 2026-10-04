@@ -1,27 +1,13 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { Fleuron } from '../components/Rules';
-import { Vinyl } from '../components/Vinyl';
 import { Card, FadeIn, Field, GhostButton, InkButton, Screen } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
 import { exampleFamily, freshFamily } from '../lib/seed';
 import { useAkol } from '../lib/store';
 import { colors, fonts, space } from '../theme';
-
-/** A preview pressing of the school morning: five tracks played, one on now. */
-const PREVIEW = [
-  { id: 'a', done: true },
-  { id: 'b', done: true },
-  { id: 'c', done: true },
-  { id: 'd', done: true },
-  { id: 'e', done: true },
-  { id: 'f', done: false, due: true },
-  { id: 'g', done: false },
-  { id: 'h', done: false },
-  { id: 'i', done: false },
-];
 
 const LINER_NOTES: [string, string, string][] = [
   ['01', 'A tracklist for everyone', 'Your list, the kids’ lists, and the whole crew on one record.'],
@@ -32,7 +18,6 @@ const LINER_NOTES: [string, string, string][] = [
 /** First run, set like an album cover. */
 export default function Welcome() {
   const { dispatch } = useAkol();
-  const { width } = useWindowDimensions();
   const [name, setName] = useState('');
 
   const start = async (example: boolean) => {
@@ -57,10 +42,6 @@ export default function Welcome() {
         </View>
         <Text style={styles.word}>AKOL</Text>
         <Text style={styles.tag}>the family, on time</Text>
-      </FadeIn>
-
-      <FadeIn delay={150} style={{ marginTop: space.lg }}>
-        <Vinyl tracks={PREVIEW} title="School Morning" nowFrac={0.5} size={Math.min(width - 70, 320)} />
       </FadeIn>
 
       <FadeIn delay={300}>
