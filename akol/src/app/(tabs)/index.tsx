@@ -60,7 +60,7 @@ export default function Today() {
         <View style={styles.top}>
           <View style={{ flex: 1 }}>
             <View style={styles.brandRow}>
-              <Lockup size={36} tagline={false} />
+              <Lockup size={36} />
             </View>
             <Text style={styles.date}>{dateLine}</Text>
             {state.settings.demoClock && (
