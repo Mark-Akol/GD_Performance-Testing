@@ -51,6 +51,12 @@ export interface Task {
   alert?: 'notify' | 'alarm';
   /** A one-off task happens only on this date, whatever days its routine runs. */
   date?: DayKey;
+  /** How long it takes, in minutes, when Akol planned it. */
+  duration?: number;
+  /** A non-negotiable time (clocking in, a shift, a set) that the rest of the day is planned around. */
+  fixed?: boolean;
+  /** Time for yourself ("Me time"): nothing to tick, never late. */
+  free?: boolean;
 }
 
 /** completions[day][taskId] = epoch ms when it was checked off. */

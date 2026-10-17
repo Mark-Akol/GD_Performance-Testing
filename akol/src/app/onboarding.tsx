@@ -8,22 +8,50 @@ import { TimePicker } from '../components/TimePicker';
 import { Chip, FadeIn, InkButton, tap } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
 import {
+  ANCHOR_IDEAS,
+  BUFFER,
   ONE_OFF_IDEAS,
+  STOP_IDEAS,
   STRUGGLES,
   buildPlan,
   defaultAnswers,
   defaultPicks,
+  minutesOf,
+  nameDays,
+  newAnchor,
+  planWeek,
   suggestionsFor,
+  type Anchor,
   type Household,
   type OnboardingAnswers,
+  type Owner,
+  type PlanItem,
   type RoutineKind,
 } from '../lib/onboarding';
-import { addDays, dayKey, formatTime, tasksForDay } from '../lib/schedule';
+import { addDays, dayKey, formatTime, parseTime, toClockTime } from '../lib/schedule';
 import { useAkol } from '../lib/store';
-import type { AkolState } from '../lib/types';
+import type { AkolState, Weekday } from '../lib/types';
 import { colors, fonts, jewels, radius, shadow, space } from '../theme';
 
-type Step = 'who' | 'name' | 'people' | 'struggles' | 'routines' | 'leave' | 'lights' | 'picks' | 'oneoffs' | 'loud' | 'ready';
+type Step =
+  | 'who'
+  | 'name'
+  | 'people'
+  | 'struggles'
+  | 'wake'
+  | 'anchors'
+  | 'travel'
+  | 'routines'
+  | 'leave'
+  | 'lights'
+  | 'picks'
+  | 'oneoffs'
+  | 'loud'
+  | 'ready';
+
+const named = (a: OnboardingAnswers) => a.anchors.filter((x) => x.title.trim());
+const hasMorningAnchor = (a: OnboardingAnswers) => named(a).some((x) => x.who === 'me' && parseTime(x.time) < 12 * 60);
+const DURATIONS = [5, 10, 15, 20, 30, 45, 60];
 
 function stepsFor(a: OnboardingAnswers): Step[] {
   return [
@@ -31,8 +59,11 @@ function stepsFor(a: OnboardingAnswers): Step[] {
     'name',
     ...(a.household === 'solo' ? [] : (['people'] as Step[])),
     'struggles',
+    'wake',
+    'anchors',
+    ...(named(a).length ? (['travel'] as Step[]) : []),
     'routines',
-    ...(a.routines.includes('morning') ? (['leave'] as Step[]) : []),
+    ...(a.routines.includes('morning') && !hasMorningAnchor(a) ? (['leave'] as Step[]) : []),
     ...(a.routines.includes('evening') ? (['lights'] as Step[]) : []),
     'picks',
     'oneoffs',
@@ -62,6 +93,7 @@ export default function Onboarding() {
       set({ picks: defaultPicks(a) });
       setPicksReady(true);
     }
+    if (next === 'anchors' && a.anchors.length === 0) set({ anchors: [newAnchor()] });
     if (next === 'ready') setPlan(buildPlan(a));
     setI(n);
   };
@@ -82,7 +114,11 @@ export default function Onboarding() {
         ? a.people.some((p) => p.name.trim())
         : step === 'routines'
           ? a.routines.length > 0
-          : true;
+          : step === 'anchors'
+            ? a.anchors.every((x) => !x.title.trim() || x.days.length > 0)
+            : true;
+  const editAnchor = (id: string, patch: Partial<Anchor>) =>
+    set({ anchors: a.anchors.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
 
   const pickHousehold = (household: Household) => {
     const people =
@@ -210,20 +246,59 @@ export default function Onboarding() {
       );
       break;
 
+    case 'wake':
+      title = 'What time do you usually wake up?';
+      sub = 'The time you actually get up, not the alarm you snooze. We’ll plan with what’s real.';
+      body = <TimePicker value={a.typicalWake} onChange={(typicalWake) => set({ typicalWake })} />;
+      break;
+
+    case 'anchors':
+      title = 'What can’t move?';
+      sub = 'Times that never change: clocking in, a shift, school, your sets. We’ll plan everything else around them.';
+      body = (
+        <View style={{ gap: space.md }}>
+          {a.anchors.map((x) => (
+            <AnchorCard
+              key={x.id}
+              x={x}
+              a={a}
+              onChange={(patch) => editAnchor(x.id, patch)}
+              onRemove={() => set({ anchors: a.anchors.filter((y) => y.id !== x.id) })}
+            />
+          ))}
+          <Pressable onPress={() => set({ anchors: [...a.anchors, newAnchor()] })} style={styles.addRow} accessibilityRole="button">
+            <Text style={styles.addText}>+ Add another</Text>
+          </Pressable>
+        </View>
+      );
+      break;
+
+    case 'travel':
+      title = 'How do you get there?';
+      sub = 'Journey time from home, plus any stops on the way. We add 5 spare minutes.';
+      body = (
+        <View style={{ gap: space.md }}>
+          {named(a).map((x) => (
+            <TravelCard key={x.id} x={x} who={x.who === 'me' ? 'You' : a.people[x.who]?.name || ''} onChange={(patch) => editAnchor(x.id, patch)} />
+          ))}
+        </View>
+      );
+      break;
+
     case 'routines':
-      title = 'Which routine should we build first?';
-      sub = 'Pick one, or both.';
+      title = 'What should Akol plan?';
+      sub = 'Mornings get you out of the door. Evenings get everyone to bed.';
       body = (
         <View style={styles.cards}>
-          <BigCard emoji="☀️" label="Morning routine" active={a.routines.includes('morning')} onPress={() => toggleRoutine('morning')} />
-          <BigCard emoji="🌙" label="Evening routine" active={a.routines.includes('evening')} onPress={() => toggleRoutine('evening')} />
+          <BigCard emoji="☀️" label="Mornings" active={a.routines.includes('morning')} onPress={() => toggleRoutine('morning')} />
+          <BigCard emoji="🌙" label="Evenings" active={a.routines.includes('evening')} onPress={() => toggleRoutine('evening')} />
         </View>
       );
       break;
 
     case 'leave':
       title = 'When do you need to be out of the door?';
-      sub = 'That’s Go time. We’ll work backwards from it.';
+      sub = 'Nothing fixed in your mornings, so we’ll work backwards from this.';
       body = (
         <View style={{ gap: space.lg }}>
           <TimePicker
@@ -247,48 +322,58 @@ export default function Onboarding() {
       break;
 
     case 'picks': {
-      title = 'Here’s your list';
-      sub = 'Untick anything you don’t need. You can change it all later.';
+      title = 'Here’s what needs doing';
+      sub = 'Untick what you don’t need, and tap a time to change how long it takes. We’ll fit it all in.';
       const all = suggestionsFor(a);
+      const total = (r: RoutineKind, who: 'me' | 'kids') =>
+        all.filter((s) => s.routine === r && s.who === who && a.picks.includes(s.id)).reduce((n, s) => n + minutesOf(a, s), 0);
       body = (
         <View style={{ gap: space.lg }}>
           {(['morning', 'evening'] as RoutineKind[])
             .filter((r) => a.routines.includes(r))
             .map((r) => (
               <View key={r} style={styles.pickGroup}>
-                <Text style={styles.pickHead}>{r === 'morning' ? '☀️  Morning' : '🌙  Evening'}</Text>
+                <Text style={styles.pickHead}>{r === 'morning' ? '☀️  Getting ready' : '🌙  Winding down'}</Text>
+                <Text style={styles.pickWho}>
+                  You: {total(r, 'me')} min{kids.length ? ` · ${kids.map((k) => k.name).join(' & ')}: ${total(r, 'kids')} min` : ''}
+                </Text>
                 {all
                   .filter((s) => s.routine === r)
                   .map((s) => {
                     const on = a.picks.includes(s.id);
+                    const mins = minutesOf(a, s);
                     return (
-                      <Pressable
-                        key={s.id}
-                        onPress={() => {
-                          tap();
-                          set({ picks: on ? a.picks.filter((x) => x !== s.id) : [...a.picks, s.id] });
-                        }}
-                        style={styles.pickRow}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: on }}
-                      >
-                        <Text style={styles.pickTime}>{formatTime(s.time).replace(' a.m.', '').replace(' p.m.', '')}</Text>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.pickTitle, !on && { color: colors.textFaint }]}>{s.title}</Text>
-                          <Text style={styles.pickWho}>
-                            {s.who === 'me' ? 'You' : kids.map((k) => k.name).join(' & ') || 'Kids'}
-                          </Text>
-                        </View>
-                        <View style={[styles.tick, on && styles.tickOn]}>{on && <Ionicons name="checkmark" size={16} color={colors.onAccent} />}</View>
-                      </Pressable>
+                      <View key={s.id} style={styles.pickRow}>
+                        <Pressable
+                          onPress={() => {
+                            tap();
+                            set({ picks: on ? a.picks.filter((x) => x !== s.id) : [...a.picks, s.id] });
+                          }}
+                          style={styles.pickMain}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: on }}
+                        >
+                          <View style={[styles.tick, on && styles.tickOn]}>{on && <Ionicons name="checkmark" size={16} color={colors.onAccent} />}</View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.pickTitle, !on && { color: colors.textFaint }]}>{s.title}</Text>
+                            <Text style={styles.pickWho}>{s.who === 'me' ? 'You' : kids.map((k) => k.name).join(' & ') || 'Kids'}</Text>
+                          </View>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => {
+                            tap();
+                            const nextMins = DURATIONS[(DURATIONS.indexOf(mins) + 1) % DURATIONS.length] ?? 10;
+                            set({ durations: { ...a.durations, [s.id]: nextMins } });
+                          }}
+                          style={[styles.minChip, !on && { opacity: 0.4 }]}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${s.title} takes ${mins} minutes. Tap to change.`}
+                        >
+                          <Text style={styles.minText}>{mins} min</Text>
+                        </Pressable>
+                      </View>
                     );
                   })}
-                <View style={[styles.pickRow, styles.goRow]}>
-                  <Text style={[styles.pickTime, { color: colors.accentInk }]}>
-                    {formatTime(r === 'morning' ? a.leaveAt : a.lightsOut).split(' ')[0]}
-                  </Text>
-                  <Text style={[styles.pickTitle, { color: colors.accentInk, flex: 1 }]}>{r === 'morning' ? '🏁 Go time' : '🌙 Lights out'}</Text>
-                </View>
               </View>
             ))}
         </View>
@@ -353,8 +438,8 @@ export default function Onboarding() {
 
     case 'ready':
       title = `Your week is ready${a.myName.trim() ? `, ${a.myName.trim()}` : ''} 🎉`;
-      sub = 'Here’s what the next seven days look like.';
-      body = plan ? <WeekPreview plan={plan} a={a} /> : null;
+      sub = 'Built around what can’t move. Tap through your days.';
+      body = plan ? <PlanPreview a={a} /> : null;
       break;
   }
 
@@ -387,6 +472,11 @@ export default function Onboarding() {
         {step === 'struggles' && (
           <Pressable onPress={() => { set({ struggles: [] }); next(); }} hitSlop={8}>
             <Text style={styles.notSure}>I’m not sure</Text>
+          </Pressable>
+        )}
+        {step === 'anchors' && (
+          <Pressable onPress={() => { set({ anchors: [] }); next(); }} hitSlop={8}>
+            <Text style={styles.notSure}>Nothing’s fixed for me</Text>
           </Pressable>
         )}
         {step === 'oneoffs' && a.oneOffs.length === 0 && (
@@ -441,43 +531,193 @@ function BigCard({ emoji, label, active, onPress }: { emoji: string; label: stri
   );
 }
 
-/** Seven days, with how much is on each, then the shape of the routine. */
-function WeekPreview({ plan, a }: { plan: AkolState; a: OnboardingAnswers }) {
-  const days = useMemo(() => Array.from({ length: 7 }, (_, n) => addDays(new Date(), n)), []);
-  const counts = days.map((d) => tasksForDay(plan, d).filter((t) => !t.checkpoint));
-  const max = Math.max(1, ...counts.map((c) => c.length));
-  const first = (r: string) => {
-    const list = plan.tasks.filter((t) => t.routineId === r).map((t) => t.time).sort();
-    return list.length ? `${formatTime(list[0])} – ${formatTime(list[list.length - 1])}` : '';
-  };
+const DAY_ORDER: Weekday[] = [1, 2, 3, 4, 5, 6, 0];
+const DAY_LETTER = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+/** One non-negotiable: what, whose, which days and when. */
+function AnchorCard({
+  x,
+  a,
+  onChange,
+  onRemove,
+}: {
+  x: Anchor;
+  a: OnboardingAnswers;
+  onChange: (patch: Partial<Anchor>) => void;
+  onRemove: () => void;
+}) {
+  const whos: ('me' | number)[] = ['me', ...a.people.map((_, n) => n).filter((n) => a.household !== 'solo' && a.people[n].name.trim())];
   return (
-    <View style={{ gap: space.lg }}>
-      <View style={styles.week}>
-        {days.map((d, n) => (
-          <View key={n} style={styles.weekDay}>
-            <View style={styles.barTrack}>
-              <View style={[styles.bar, { height: `${(counts[n].length / max) * 100}%` }, n === 0 && { backgroundColor: colors.accentStrong }]} />
-            </View>
-            <Text style={styles.weekCount}>{counts[n].length}</Text>
-            <Text style={[styles.weekName, n === 0 && { color: colors.accentInk }]}>
-              {n === 0 ? 'Today' : d.toLocaleDateString('en-GB', { weekday: 'short' })}
-            </Text>
-          </View>
+    <View style={styles.anchorCard}>
+      <View style={styles.anchorHead}>
+        <Ionicons name="lock-closed" size={16} color={colors.textDim} />
+        <TextInput
+          value={x.title}
+          onChangeText={(title) => onChange({ title })}
+          placeholder="e.g. Clock in at work"
+          placeholderTextColor={colors.textFaint}
+          style={styles.anchorTitle}
+        />
+        <Pressable hitSlop={8} onPress={onRemove} accessibilityLabel="Remove">
+          <Ionicons name="close" size={20} color={colors.textFaint} />
+        </Pressable>
+      </View>
+      {!x.title.trim() && (
+        <View style={styles.chipRow}>
+          {ANCHOR_IDEAS.map((t) => (
+            <Chip key={t} label={t} onPress={() => onChange({ title: t })} />
+          ))}
+        </View>
+      )}
+      {whos.length > 1 && (
+        <View style={styles.chipRow}>
+          {whos.map((w) => (
+            <Chip
+              key={String(w)}
+              label={w === 'me' ? 'You' : a.people[w].name}
+              active={x.who === w}
+              color={colors.ink}
+              onPress={() => onChange({ who: w })}
+            />
+          ))}
+        </View>
+      )}
+      <View style={styles.dayRow}>
+        {DAY_ORDER.map((d) => {
+          const on = x.days.includes(d);
+          return (
+            <Pressable
+              key={d}
+              onPress={() => {
+                tap();
+                onChange({ days: on ? x.days.filter((y) => y !== d) : [...x.days, d] });
+              }}
+              style={[styles.dayDot, on && styles.dayOn]}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: on }}
+              accessibilityLabel={nameDays([d])}
+            >
+              <Text style={[styles.dayText, on && { color: '#FFFFFF' }]}>{DAY_LETTER[d]}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <TimePicker value={x.time} onChange={(time) => onChange({ time })} />
+    </View>
+  );
+}
+
+/** Journey and stops for one non-negotiable, with the leave time worked out live. */
+function TravelCard({ x, who, onChange }: { x: Anchor; who: string; onChange: (patch: Partial<Anchor>) => void }) {
+  const stops = x.stops.reduce((n, s) => n + s.minutes, 0);
+  const moving = x.travel > 0 || x.stops.length > 0;
+  const depart = parseTime(x.time) - x.travel - stops - (moving ? BUFFER : 0);
+  const step = (d: number) => onChange({ travel: Math.max(0, Math.min(180, x.travel + d)) });
+  return (
+    <View style={styles.anchorCard}>
+      <View>
+        <Text style={styles.pickTitle}>
+          🔒 {x.title} · {formatTime(x.time)}
+        </Text>
+        <Text style={styles.pickWho}>
+          {who} · {nameDays(x.days)}
+        </Text>
+      </View>
+      <View style={styles.stepRow}>
+        <Text style={styles.stepLabel}>Journey</Text>
+        <Pressable onPress={() => step(-5)} style={styles.stepBtn} accessibilityLabel="5 minutes less">
+          <Ionicons name="remove" size={18} color={colors.ink} />
+        </Pressable>
+        <Text style={styles.stepValue}>{x.travel} min</Text>
+        <Pressable onPress={() => step(5)} style={styles.stepBtn} accessibilityLabel="5 minutes more">
+          <Ionicons name="add" size={18} color={colors.ink} />
+        </Pressable>
+      </View>
+      <View style={styles.chipRow}>
+        <Chip label="At home" active={!moving} color={colors.ink} onPress={() => onChange({ travel: 0, stops: [] })} />
+        {STOP_IDEAS.map((sp) => {
+          const on = x.stops.some((s) => s.label === sp.label);
+          return (
+            <Chip
+              key={sp.label}
+              label={`${sp.label} +${sp.minutes}`}
+              active={on}
+              color={colors.ink}
+              onPress={() => onChange({ stops: on ? x.stops.filter((s) => s.label !== sp.label) : [...x.stops, sp] })}
+            />
+          );
+        })}
+      </View>
+      {moving && (
+        <View style={styles.leaveBy}>
+          <Text style={styles.leaveByText}>Leave by {formatTime(toClockTime(depart))}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const hm = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`);
+
+const KIND_ICON: Partial<Record<PlanItem['kind'], string>> = {
+  wake: '⏰',
+  leave: '🏁',
+  fixed: '🔒',
+  'lights-out': '🌙',
+  'get-ready': '👟',
+};
+
+/** The planned days, one group at a time, with how each one balances out. */
+function PlanPreview({ a }: { a: OnboardingAnswers }) {
+  const week = useMemo(() => planWeek(a), [a]);
+  const [g, setG] = useState(0);
+  const group = week[Math.min(g, week.length - 1)];
+  if (!group) return null;
+  const kidNames = a.people.filter((p) => p.role === 'child' && p.name.trim()).map((p) => p.name.trim()).join(' & ');
+  const ownerName = (o: Owner) =>
+    o === 'me' ? 'You' : o === 'kids' ? kidNames || 'Kids' : o === 'family' ? 'Everyone' : a.people[o]?.name ?? '';
+  const { insight } = group;
+  return (
+    <View style={{ gap: space.md }}>
+      <View style={styles.chipRow}>
+        {week.map((w, n) => (
+          <Chip key={w.name + w.part} label={w.name} active={n === g} color={colors.ink} onPress={() => setG(n)} />
         ))}
       </View>
-      <View style={styles.summary}>
-        {plan.routines
-          .filter((r) => r.name !== 'One-offs')
-          .map((r) => (
-            <Text key={r.id} style={styles.summaryLine}>
-              {r.name === 'Morning' ? '☀️' : '🌙'}  {r.name}s · {first(r.id)} · {r.days.length === 5 ? 'weekdays' : 'every day'}
-            </Text>
-          ))}
-        {a.oneOffs.length > 0 && <Text style={styles.summaryLine}>📌  {a.oneOffs.length} one-off{a.oneOffs.length === 1 ? '' : 's'} this week</Text>}
-        <Text style={styles.summaryLine}>
-          {a.loud ? '⏰' : '🔔'}  {a.loud ? 'Go time rings until everyone’s ready' : 'A notification at Go time'}
-        </Text>
-        <Text style={styles.summaryLine}>👥  {plan.members.map((m) => m.name).join(', ')}</Text>
+      {group.part === 'day' && insight.wake && (
+        <View style={[styles.insight, insight.earlier > 0 && styles.insightWarn]}>
+          <Text style={styles.insightBig}>
+            {insight.meTime >= 10
+              ? `☕ ${insight.meTime} minutes to yourself`
+              : insight.earlier > 0
+                ? `⏰ Up ${insight.earlier} minutes earlier than usual`
+                : '✅ Fits your usual wake-up'}
+          </Text>
+          <Text style={styles.insightSmall}>
+            Wake {formatTime(insight.wake)}
+            {insight.sleepIn >= 30 ? ` (a ${hm(insight.sleepIn)} lie-in)` : ''}
+            {insight.leave ? ` · leave ${formatTime(insight.leave)}` : ''}
+          </Text>
+        </View>
+      )}
+      <View style={styles.planList}>
+        {group.items.map((it, n) => {
+          const me = it.kind === 'me-time' || it.kind === 'your-time';
+          return (
+            <View key={n} style={[styles.planRow, n > 0 && styles.planBorder, me && styles.planMe, it.kind === 'fixed' && styles.planFixed]}>
+              <Text style={styles.planTime}>{formatTime(it.time)}</Text>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.planTitle}>
+                  {KIND_ICON[it.kind] ? `${KIND_ICON[it.kind]} ` : ''}
+                  {it.title}
+                </Text>
+                <Text style={styles.planWho}>
+                  {[ownerName(it.owner), it.minutes ? `${it.minutes} min` : null, it.note].filter(Boolean).join(' · ')}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -552,9 +792,35 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   pickGroup: { backgroundColor: colors.card, borderRadius: 22, padding: space.lg, gap: 2 },
   pickHead: { fontFamily: fonts.display, fontSize: 16, color: colors.text, marginBottom: space.xs },
-  pickRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 9 },
-  goRow: { borderTopWidth: 1, borderTopColor: colors.hairline, marginTop: space.xs, paddingTop: space.md },
-  pickTime: { fontFamily: fonts.semibold, fontSize: 14, color: colors.textDim, width: 42 },
+  pickRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 7 },
+  pickMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.md },
+  minChip: { backgroundColor: colors.bgRaised, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
+  minText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.text },
+  anchorCard: { backgroundColor: colors.card, borderRadius: 22, padding: space.lg, gap: space.md },
+  anchorHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  anchorTitle: { flex: 1, fontFamily: fonts.display, fontSize: 19, color: colors.text, paddingVertical: 4 },
+  dayRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 4 },
+  dayDot: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.bgRaised, alignItems: 'center', justifyContent: 'center' },
+  dayOn: { backgroundColor: colors.ink },
+  dayText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.textDim },
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  stepLabel: { flex: 1, fontFamily: fonts.medium, fontSize: 16, color: colors.text },
+  stepBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.bgRaised, alignItems: 'center', justifyContent: 'center' },
+  stepValue: { fontFamily: fonts.display, fontSize: 18, color: colors.text, minWidth: 64, textAlign: 'center' },
+  leaveBy: { backgroundColor: colors.accentSoft, borderRadius: radius.pill, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 6 },
+  leaveByText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accentInk },
+  insight: { backgroundColor: colors.accentSoft, borderRadius: 20, padding: space.lg, gap: 2 },
+  insightWarn: { backgroundColor: '#FFF4DB' },
+  insightBig: { fontFamily: fonts.display, fontSize: 18, color: colors.text },
+  insightSmall: { fontFamily: fonts.medium, fontSize: 14, color: colors.textDim },
+  planList: { backgroundColor: colors.card, borderRadius: 22, paddingHorizontal: space.lg, paddingVertical: space.xs },
+  planRow: { flexDirection: 'row', gap: space.md, paddingVertical: 10 },
+  planBorder: { borderTopWidth: 1, borderTopColor: colors.hairline },
+  planMe: { backgroundColor: colors.accentSoft, marginHorizontal: -space.lg, paddingHorizontal: space.lg },
+  planFixed: { backgroundColor: colors.bgRaised, marginHorizontal: -space.lg, paddingHorizontal: space.lg },
+  planTime: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDim, width: 66, paddingTop: 2 },
+  planTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: colors.text },
+  planWho: { fontFamily: fonts.light, fontSize: 12, color: colors.textDim },
   pickTitle: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
   pickWho: { fontFamily: fonts.light, fontSize: 12, color: colors.textDim },
   tick: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: colors.hairlineStrong, alignItems: 'center', justifyContent: 'center' },
@@ -562,12 +828,4 @@ const styles = StyleSheet.create({
   oneOffRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.card, borderRadius: 18, padding: space.lg },
   bottom: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.md },
   notSure: { fontFamily: fonts.semibold, fontSize: 16, color: colors.textDim, textAlign: 'center' },
-  week: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 22, padding: space.lg, gap: 6 },
-  weekDay: { flex: 1, alignItems: 'center', gap: 4 },
-  barTrack: { height: 90, width: 18, borderRadius: 9, backgroundColor: colors.bgRaised, justifyContent: 'flex-end', overflow: 'hidden' },
-  bar: { width: 18, borderRadius: 9, backgroundColor: colors.ink, minHeight: 4 },
-  weekCount: { fontFamily: fonts.display, fontSize: 15, color: colors.text },
-  weekName: { fontFamily: fonts.semibold, fontSize: 11, color: colors.textDim },
-  summary: { backgroundColor: colors.card, borderRadius: 22, padding: space.lg, gap: space.sm },
-  summaryLine: { fontFamily: fonts.medium, fontSize: 15, lineHeight: 22, color: colors.text },
 });

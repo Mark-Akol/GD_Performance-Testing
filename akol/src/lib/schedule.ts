@@ -67,6 +67,7 @@ export function sortByTime(tasks: Task[]): Task[] {
     (a, b) =>
       parseTime(a.time) - parseTime(b.time) ||
       Number(!!a.checkpoint) - Number(!!b.checkpoint) ||
+      Number(!!a.free) - Number(!!b.free) ||
       a.title.localeCompare(b.title),
   );
 }
@@ -95,10 +96,13 @@ export function isDone(completions: Completions, day: DayKey, taskId: string): b
   return !!completions[day]?.[taskId];
 }
 
+/** Fixed times and time for yourself are never chores: they can't be late, they just pass. */
+const isChore = (t: Task) => !t.checkpoint && !t.fixed && !t.free;
+
 export function taskStatus(task: Task, done: boolean, now: Date): TaskStatus {
   if (done) return 'done';
   const delta = minutesOfDay(now) - parseTime(task.time);
-  if (delta >= DUE_WINDOW_MIN) return 'overdue';
+  if (delta >= DUE_WINDOW_MIN) return task.fixed || task.free ? 'done' : 'overdue';
   if (delta >= 0) return 'due';
   if (delta >= -SOON_WINDOW_MIN) return 'soon';
   return 'upcoming';
@@ -112,7 +116,7 @@ export interface Progress {
 
 /** Checkpoints are summaries, not chores, so they don't count toward progress. */
 export function progress(tasks: Task[], completions: Completions, day: DayKey): Progress {
-  const countable = tasks.filter((t) => !t.checkpoint);
+  const countable = tasks.filter(isChore);
   const done = countable.filter((t) => isDone(completions, day, t.id)).length;
   const total = countable.length;
   return { done, total, ratio: total ? done / total : 0 };
@@ -134,7 +138,7 @@ export function checkpointSummary(
   const limit = parseTime(checkpoint.time);
   const relevant = sortByTime(
     state.tasks.filter(
-      (t) => t.routineId === checkpoint.routineId && !t.checkpoint && parseTime(t.time) <= limit,
+      (t) => t.routineId === checkpoint.routineId && isChore(t) && parseTime(t.time) <= limit,
     ),
   );
   const done = relevant.filter((t) => isDone(completions, day, t.id));
@@ -159,9 +163,7 @@ export function nextUp(
 }
 
 export function overdue(tasks: Task[], completions: Completions, day: DayKey, now: Date): Task[] {
-  return tasks.filter(
-    (t) => !t.checkpoint && taskStatus(t, isDone(completions, day, t.id), now) === 'overdue',
-  );
+  return tasks.filter((t) => isChore(t) && taskStatus(t, isDone(completions, day, t.id), now) === 'overdue');
 }
 
 /**

@@ -124,9 +124,16 @@ export function TaskRow({
           <Text style={[s.itemTitle, done && s.itemDone]} numberOfLines={2}>
             {task.title}
           </Text>
-          {!done && (status === 'overdue' || status === 'soon' || !!task.note || !!task.date || task.alert === 'alarm') && (
+          {!done && (status === 'overdue' || status === 'soon' || !!task.note || !!task.date || task.alert === 'alarm' || !!task.duration || task.fixed) && (
             <View style={s.meta}>
               {isToday && <StatusMark status={status} now={now} time={task.time} />}
+              {task.fixed && (
+                <View style={s.fixedTag}>
+                  <Ionicons name="lock-closed" size={10} color={colors.text} />
+                  <Text style={s.fixedText}>Fixed</Text>
+                </View>
+              )}
+              {!!task.duration && <Text style={s.duration}>{task.duration} min</Text>}
               {task.alert === 'alarm' && <Ionicons name="alarm" size={13} color={colors.accentInk} />}
               {!!task.date && <Text style={s.tag}>One-off</Text>}
               {!!task.note && (
@@ -297,6 +304,9 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   check: { borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  fixedTag: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 1 },
+  fixedText: { fontFamily: fonts.semibold, fontSize: 10.5, color: colors.text },
+  duration: { fontFamily: fonts.semibold, fontSize: 12, color: colors.textDim },
 
   panel: { borderRadius: radius.lg, padding: space.lg, marginVertical: space.md, marginLeft: 52 + space.md, ...shadow },
   cpTop: { flexDirection: 'row', alignItems: 'center', gap: space.md },
