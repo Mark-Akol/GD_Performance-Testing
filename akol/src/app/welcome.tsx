@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
   sub: { fontFamily: fonts.body, fontSize: 16, lineHeight: 23, color: colors.textDim, textAlign: 'center' },
   actions: { gap: space.md },
   fine: { fontFamily: fonts.light, fontSize: 13, color: colors.textFaint, textAlign: 'center' },
-  link: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent, textAlign: 'center', paddingVertical: space.xs },
+  link: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accentInk, textAlign: 'center', paddingVertical: space.xs },
 });

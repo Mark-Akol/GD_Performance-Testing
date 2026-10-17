@@ -36,5 +36,5 @@ export function Dingbat() {
 
 const styles = StyleSheet.create({
   fleuron: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch' },
-  gem: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
+  gem: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accentStrong },
 });

@@ -42,7 +42,7 @@ export function CheckCircle({
   onPaper?: boolean;
   inverted?: boolean;
 }) {
-  const ring = onPaper ? '#FFFFFF' : color;
+  const ring = onPaper ? colors.ink : color;
   return (
     <View
       style={[
@@ -52,7 +52,7 @@ export function CheckCircle({
         !done && !onPaper && { backgroundColor: '#FFFFFF' },
       ]}
     >
-      {done && <Ionicons name="checkmark" size={size * 0.62} color={onPaper ? colors.accent : '#FFFFFF'} />}
+      {done && <Ionicons name="checkmark" size={size * 0.62} color="#FFFFFF" />}
     </View>
   );
 }
@@ -127,7 +127,7 @@ export function TaskRow({
           {!done && (status === 'overdue' || status === 'soon' || !!task.note || !!task.date || task.alert === 'alarm') && (
             <View style={s.meta}>
               {isToday && <StatusMark status={status} now={now} time={task.time} />}
-              {task.alert === 'alarm' && <Ionicons name="alarm" size={13} color={colors.accent} />}
+              {task.alert === 'alarm' && <Ionicons name="alarm" size={13} color={colors.accentInk} />}
               {!!task.date && <Text style={s.tag}>One-off</Text>}
               {!!task.note && (
                 <Text style={s.note} numberOfLines={1}>
@@ -155,7 +155,7 @@ export function CheckpointCard({ task, day, now, isToday = true }: { task: Task;
   const until = isToday ? relative(atTime(now, task.time), now) : '';
 
   return (
-    <LinearGradient colors={summary.complete ? [colors.success, '#3CC48C'] : [colors.accent, '#FF7A52']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.panel}>
+    <LinearGradient colors={summary.complete ? [colors.successSoft, '#BFEBD6'] : [colors.accent, colors.accentStrong]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.panel}>
       <Pressable onLongPress={() => router.push({ pathname: '/task', params: { id: task.id } })}>
         <View style={s.cpTop}>
           <View style={s.cpBadge}>
@@ -275,7 +275,7 @@ const s = StyleSheet.create({
     borderRadius: radius.md,
     borderLeftWidth: 5,
   },
-  blockNow: { borderWidth: 2, borderColor: colors.accent, borderLeftWidth: 5, backgroundColor: '#FFFFFF', ...shadow },
+  blockNow: { borderWidth: 2, borderColor: colors.accentStrong, borderLeftWidth: 5, backgroundColor: '#FFFFFF', ...shadow },
   rowBody: { flex: 1, gap: 3 },
   byRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   byline: { fontFamily: fonts.medium, fontSize: 12, color: colors.textDim },
@@ -283,7 +283,7 @@ const s = StyleSheet.create({
   itemDone: { color: colors.textFaint, textDecorationLine: 'line-through' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
   nowPill: { backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 1 },
-  nowPillText: { fontFamily: fonts.semibold, fontSize: 11, color: '#FFFFFF' },
+  nowPillText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.onAccent },
   late: { fontFamily: fonts.semibold, fontSize: 12, color: colors.danger },
   soon: { fontFamily: fonts.medium, fontSize: 12, color: colors.textDim },
   note: { fontFamily: fonts.light, fontSize: 12, color: colors.textDim, flexShrink: 1 },
@@ -304,19 +304,19 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cpBadgeText: { fontSize: 22 },
-  cpEyebrow: { fontFamily: fonts.semibold, fontSize: 12, color: 'rgba(255,255,255,0.9)' },
-  cpTitle: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, color: '#FFFFFF' },
+  cpEyebrow: { fontFamily: fonts.semibold, fontSize: 12, color: colors.onAccent, opacity: 0.75 },
+  cpTitle: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, color: colors.onAccent },
   tally: { flexDirection: 'row', alignItems: 'baseline' },
-  cpCount: { fontFamily: fonts.display, fontSize: 30, color: '#FFFFFF', ...lining },
-  cpOf: { fontFamily: fonts.displayBold, fontSize: 16, color: 'rgba(255,255,255,0.75)', ...lining },
-  cpDeck: { fontFamily: fonts.medium, fontSize: 15, lineHeight: 21, color: '#FFFFFF', marginTop: space.md },
-  meter: { height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.3)', marginTop: space.md, overflow: 'hidden' },
-  meterFill: { height: 8, borderRadius: 4, backgroundColor: '#FFFFFF' },
+  cpCount: { fontFamily: fonts.display, fontSize: 30, color: colors.onAccent, ...lining },
+  cpOf: { fontFamily: fonts.displayBold, fontSize: 16, color: colors.onAccent, opacity: 0.6, ...lining },
+  cpDeck: { fontFamily: fonts.medium, fontSize: 15, lineHeight: 21, color: colors.onAccent, marginTop: space.md },
+  meter: { height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.6)', marginTop: space.md, overflow: 'hidden' },
+  meterFill: { height: 8, borderRadius: 4, backgroundColor: colors.ink },
   cpList: { marginTop: space.lg, backgroundColor: '#FFFFFF', borderRadius: radius.md, paddingHorizontal: space.md, paddingBottom: space.md },
   cpItem: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 11 },
   cpItemBorder: { borderTopWidth: 1, borderTopColor: colors.hairline },
@@ -324,13 +324,13 @@ const s = StyleSheet.create({
   cpTime: { fontFamily: fonts.medium, fontSize: 13, color: colors.textDim, ...lining },
   allDone: {
     marginTop: space.sm,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.ink,
     borderRadius: radius.pill,
     paddingVertical: 14,
     alignItems: 'center',
   },
   allDoneText: { fontFamily: fonts.semibold, fontSize: 15, color: '#FFFFFF' },
-  showDone: { fontFamily: fonts.semibold, fontSize: 13, color: 'rgba(255,255,255,0.9)' },
+  showDone: { fontFamily: fonts.semibold, fontSize: 13, color: colors.onAccent },
   cpDoneItem: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 6 },
-  cpDoneText: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: 'rgba(255,255,255,0.85)', textDecorationLine: 'line-through' },
+  cpDoneText: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.onAccent, opacity: 0.6, textDecorationLine: 'line-through' },
 });

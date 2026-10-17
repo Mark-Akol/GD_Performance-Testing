@@ -274,5 +274,5 @@ const styles = StyleSheet.create({
   },
   script: { fontFamily: fonts.display, fontSize: 20, color: colors.text },
   meter: { height: 4, backgroundColor: colors.hairline },
-  meterFill: { height: 4, backgroundColor: colors.accent },
+  meterFill: { height: 4, backgroundColor: colors.accentStrong },
 });

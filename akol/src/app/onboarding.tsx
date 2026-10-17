@@ -279,15 +279,15 @@ export default function Onboarding() {
                             {s.who === 'me' ? 'You' : kids.map((k) => k.name).join(' & ') || 'Kids'}
                           </Text>
                         </View>
-                        <View style={[styles.tick, on && styles.tickOn]}>{on && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}</View>
+                        <View style={[styles.tick, on && styles.tickOn]}>{on && <Ionicons name="checkmark" size={16} color={colors.onAccent} />}</View>
                       </Pressable>
                     );
                   })}
                 <View style={[styles.pickRow, styles.goRow]}>
-                  <Text style={[styles.pickTime, { color: colors.accent }]}>
+                  <Text style={[styles.pickTime, { color: colors.accentInk }]}>
                     {formatTime(r === 'morning' ? a.leaveAt : a.lightsOut).split(' ')[0]}
                   </Text>
-                  <Text style={[styles.pickTitle, { color: colors.accent, flex: 1 }]}>{r === 'morning' ? '🏁 Go time' : '🌙 Lights out'}</Text>
+                  <Text style={[styles.pickTitle, { color: colors.accentInk, flex: 1 }]}>{r === 'morning' ? '🏁 Go time' : '🌙 Lights out'}</Text>
                 </View>
               </View>
             ))}
@@ -418,7 +418,7 @@ function Option({ label, emoji, active, onPress, multi }: { label: string; emoji
       <Text style={styles.optionText}>
         {label} {emoji}
       </Text>
-      {active && <Ionicons name="checkmark-circle" size={22} color={colors.accent} />}
+      {active && <Ionicons name="checkmark-circle" size={22} color={colors.accentInk} />}
     </Pressable>
   );
 }
@@ -436,7 +436,7 @@ function BigCard({ emoji, label, active, onPress }: { emoji: string; label: stri
     >
       <Text style={styles.bigEmoji}>{emoji}</Text>
       <Text style={styles.bigLabel}>{label}</Text>
-      {active && <Ionicons name="checkmark-circle" size={22} color={colors.accent} style={{ position: 'absolute', top: 14, right: 14 }} />}
+      {active && <Ionicons name="checkmark-circle" size={22} color={colors.accentInk} style={{ position: 'absolute', top: 14, right: 14 }} />}
     </Pressable>
   );
 }
@@ -456,10 +456,10 @@ function WeekPreview({ plan, a }: { plan: AkolState; a: OnboardingAnswers }) {
         {days.map((d, n) => (
           <View key={n} style={styles.weekDay}>
             <View style={styles.barTrack}>
-              <View style={[styles.bar, { height: `${(counts[n].length / max) * 100}%` }, n === 0 && { backgroundColor: colors.accent }]} />
+              <View style={[styles.bar, { height: `${(counts[n].length / max) * 100}%` }, n === 0 && { backgroundColor: colors.accentStrong }]} />
             </View>
             <Text style={styles.weekCount}>{counts[n].length}</Text>
-            <Text style={[styles.weekName, n === 0 && { color: colors.accent }]}>
+            <Text style={[styles.weekName, n === 0 && { color: colors.accentInk }]}>
               {n === 0 ? 'Today' : d.toLocaleDateString('en-GB', { weekday: 'short' })}
             </Text>
           </View>
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   track: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.bgRaised, overflow: 'hidden' },
-  fill: { height: 8, borderRadius: 4, backgroundColor: colors.accent },
+  fill: { height: 8, borderRadius: 4, backgroundColor: colors.accentStrong },
   scroll: { padding: space.lg, paddingTop: space.xl, paddingBottom: space.xxl },
   ask: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   mascot: { width: 56, height: 56, borderRadius: 16, transform: [{ rotate: '-8deg' }] },
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  optionOn: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
+  optionOn: { backgroundColor: colors.accentSoft, borderColor: colors.accentStrong },
   optionText: { flex: 1, fontFamily: fonts.medium, fontSize: 17, lineHeight: 23, color: colors.text },
   cards: { flexDirection: 'row', gap: space.md },
   bigCard: {
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
   pickTitle: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
   pickWho: { fontFamily: fonts.light, fontSize: 12, color: colors.textDim },
   tick: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: colors.hairlineStrong, alignItems: 'center', justifyContent: 'center' },
-  tickOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  tickOn: { backgroundColor: colors.accentStrong, borderColor: colors.accentStrong },
   oneOffRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.card, borderRadius: 18, padding: space.lg },
   bottom: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.md },
   notSure: { fontFamily: fonts.semibold, fontSize: 16, color: colors.textDim, textAlign: 'center' },

@@ -40,9 +40,9 @@ shows everyone's open items.
 - Routinery's countdown ring for what's up next.
 - Cozi's colour for each family member.
 - Brili's stars and streaks for the kids.
-- Alarmy's urgent coral for alarms and Go time.
+- One fresh accent (royal mint) for alarms, Go time and selections.
 
-The black Akol mark and the marker-pen tagline *just a-call away* keep the hip hop edge. Type is Nunito. The bold
+The black Akol mark and the marker-pen tagline *just a-call away* keep the hip hop edge. Type is Nunito. The accent is royal mint; baby blue is one line away (`ACCENT` in `src/theme/index.ts`). The bold
 black-and-white Side A is in git history (`3492527`).
 
 **Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single

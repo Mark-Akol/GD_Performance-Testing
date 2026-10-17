@@ -323,10 +323,10 @@ function Choice({
         tap();
         onPress();
       }}
-      style={[styles.choice, active && styles.choiceActive, active && loud && { backgroundColor: colors.accent, borderColor: colors.accent }]}
+      style={[styles.choice, active && styles.choiceActive, active && loud && { backgroundColor: colors.accent, borderColor: colors.accentStrong }]}
     >
-      <Text style={[styles.choiceTitle, active && { color: colors.onPaper }]}>{title}</Text>
-      <Text style={[styles.choiceSub, active && { color: colors.onPaper }]}>{sub}</Text>
+      <Text style={[styles.choiceTitle, active && { color: loud ? colors.onAccent : colors.onPaper }]}>{title}</Text>
+      <Text style={[styles.choiceSub, active && { color: loud ? colors.onAccent : colors.onPaper }]}>{sub}</Text>
     </Pressable>
   );
 }

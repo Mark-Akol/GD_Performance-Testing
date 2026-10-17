@@ -192,14 +192,14 @@ export function InkButton({
       style={({ pressed }) => [styles.goldWrap, { opacity: disabled ? 0.4 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }, style]}
     >
       <LinearGradient
-        colors={tone === 'accent' ? [colors.accent, '#FF7A52'] : gradients.ink}
+        colors={tone === 'accent' ? [colors.accent, colors.accentStrong] : gradients.ink}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.goldBtn}
       >
         <Sheen />
         {icon}
-        <Text style={styles.goldBtnText}>{label}</Text>
+        <Text style={[styles.goldBtnText, tone === 'accent' && { color: colors.onAccent }]}>{label}</Text>
       </LinearGradient>
     </Pressable>
   );
@@ -441,7 +441,7 @@ export const styles = StyleSheet.create({
     padding: space.lg,
     ...shadow,
   },
-  cardGlow: { borderWidth: 2, borderColor: colors.accent },
+  cardGlow: { borderWidth: 2, borderColor: colors.accentStrong },
   goldWrap: { borderRadius: radius.pill, ...shadow },
   goldBtn: {
     flexDirection: 'row',

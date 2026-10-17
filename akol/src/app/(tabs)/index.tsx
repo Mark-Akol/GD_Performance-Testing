@@ -97,7 +97,7 @@ export default function Today() {
               size={96}
               stroke={9}
               ratio={allDone ? 1 : next ? (next.status === 'due' || minsToNext <= 0 ? 1 : 1 - Math.min(60, minsToNext) / 60) : 0}
-              color={allDone ? colors.success : next?.status === 'due' || minsToNext <= 0 ? colors.accent : (nextJewel?.base ?? colors.ink)}
+              color={allDone ? colors.success : next?.status === 'due' || minsToNext <= 0 ? colors.accentStrong : (nextJewel?.base ?? colors.ink)}
             />
             <View style={styles.ringCenter}>
               {allDone ? (
@@ -108,7 +108,7 @@ export default function Today() {
                   <Text style={styles.ringUnit}>{minsToNext >= 60 ? 'hr' : 'min'}</Text>
                 </>
               ) : (
-                <Text style={[styles.ringNum, { color: colors.accent, fontSize: 20 }]}>{next ? 'Now' : '—'}</Text>
+                <Text style={[styles.ringNum, { color: colors.accentInk, fontSize: 20 }]}>{next ? 'Now' : '—'}</Text>
               )}
             </View>
           </View>
@@ -187,10 +187,10 @@ export default function Today() {
 
 function Stat({ emoji, value, label, alert }: { emoji: string; value: string; label: string; alert?: boolean }) {
   return (
-    <View style={[styles.stat, alert && { backgroundColor: colors.accentSoft }]}>
+    <View style={[styles.stat, alert && { backgroundColor: colors.dangerSoft }]}>
       <Text style={styles.statEmoji}>{emoji}</Text>
       <View>
-        <Text style={[styles.statValue, alert && { color: colors.accent }]}>{value}</Text>
+        <Text style={[styles.statValue, alert && { color: colors.danger }]}>{value}</Text>
         <Text style={styles.statLabel}>{label}</Text>
       </View>
     </View>
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   ringNum: { fontFamily: fonts.display, fontSize: 28, lineHeight: 32, color: colors.text, ...lining },
   ringUnit: { fontFamily: fonts.medium, fontSize: 12, color: colors.textDim, marginTop: -2 },
   ringEmoji: { fontSize: 34 },
-  leadLabel: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', color: colors.accent },
+  leadLabel: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', color: colors.accentInk },
   leadTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 27, color: colors.text },
   leadMeta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: 2, flexWrap: 'wrap' },
   timePill: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 },

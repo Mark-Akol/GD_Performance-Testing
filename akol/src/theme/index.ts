@@ -2,12 +2,21 @@ import type { ViewStyle } from 'react-native';
 
 import type { JewelKey } from '../lib/types';
 
+/** The one colour for the moments that matter: alarms, Go time, "now", selections. */
+const ACCENTS = {
+  babyBlue: { accent: '#8ED1FC', accentStrong: '#52B4F2', accentInk: '#1673B8', accentSoft: '#E6F5FE' },
+  royalMint: { accent: '#7EE0BF', accentStrong: '#2EC495', accentInk: '#0B8763', accentSoft: '#E0F8EF' },
+} as const;
+export type AccentName = keyof typeof ACCENTS;
+export const ACCENT: AccentName = 'royalMint';
+const A = ACCENTS[ACCENT];
+
 /**
- * Akol "Side B": warm, light and calm, with one loud colour for the moments that matter.
+ * Akol "Side B": warm, light and calm, with one fresh colour for the moments that matter.
  *
  * Borrowed from the best of the field: Tiimo's soft colour-block timeline, Routinery's big
  * countdown ring, Cozi's colour for each family member, Brili's stars for the kids and
- * Alarmy's urgent coral for alarms and Go time. The black Akol mark and the marker-pen
+ * an accent (baby blue or royal mint) for alarms and Go time. The black Akol mark and the marker-pen
  * tagline keep the hip hop edge.
  */
 export const colors = {
@@ -24,9 +33,17 @@ export const colors = {
   text: '#16151A',
   textDim: '#6B6875',
   textFaint: '#A3A0AA',
-  /** Alarms, Go time, "now": the one loud colour. */
-  accent: '#FF5A36',
-  accentSoft: '#FFE8E1',
+  /** Fills: buttons, Go time, progress, ticks. Light, so text on it is ink. */
+  accent: A.accent,
+  /** Borders, gradient ends and small marks. */
+  accentStrong: A.accentStrong,
+  /** Text and icons in the accent, on the light page. */
+  accentInk: A.accentInk,
+  /** Selected backgrounds. */
+  accentSoft: A.accentSoft,
+  /** Text on an accent fill. */
+  onAccent: '#16151A',
+  dangerSoft: '#FDE7E8',
   success: '#1FA971',
   successSoft: '#DDF4E9',
   warning: '#F2A007',
@@ -70,7 +87,7 @@ export const jewels: Record<
   adire: { name: 'Grape', style: 'solid', hex: '#7C5CFA', metal: 0, base: '#7C5CFA', light: '#B3A0FC', deep: '#5435D6', tint: '#EEE9FE' },
   maasai: { name: 'Berry', style: 'solid', hex: '#E8508F', metal: 0, base: '#E8508F', light: '#F497BD', deep: '#B92E68', tint: '#FCE7F0' },
   terracotta: { name: 'Lagoon', style: 'solid', hex: '#14B8A6', metal: 0, base: '#14B8A6', light: '#6FD9CC', deep: '#0C8A7C', tint: '#DEF6F3' },
-  malachite: { name: 'Mint', style: 'solid', hex: '#2FB36D', metal: 0, base: '#2FB36D', light: '#7FD3A5', deep: '#1E8650', tint: '#E1F5EA' },
+  malachite: { name: 'Tangerine', style: 'solid', hex: '#FF8A3D', metal: 0, base: '#FF8A3D', light: '#FFB988', deep: '#D9661C', tint: '#FFEDE0' },
 };
 
 export const JEWEL_KEYS = Object.keys(jewels) as JewelKey[];
@@ -109,10 +126,10 @@ export const radius = { sm: 10, md: 14, lg: 22, pill: 999 } as const;
 export const familyJewel = {
   name: 'Family',
   style: 'solid' as SealStyle,
-  hex: colors.accent,
+  hex: colors.accentStrong,
   metal: 0,
-  base: colors.accent,
-  light: '#FF9A80',
-  deep: '#D63C1B',
+  base: colors.accentStrong,
+  light: colors.accent,
+  deep: colors.accentInk,
   tint: colors.accentSoft,
 };
