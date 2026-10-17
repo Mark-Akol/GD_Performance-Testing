@@ -41,6 +41,14 @@ export function formatTime(t: ClockTime, opts: { h24?: boolean } = {}): string {
   return `${h12}:${String(m).padStart(2, '0')} ${suffix}`;
 }
 
+/** "15 min", "1 h", "10 h 45 min". */
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+
 export function dayKey(d: Date): DayKey {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

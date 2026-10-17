@@ -28,6 +28,7 @@ const ROLES: { value: MemberRole; label: string }[] = [
   { value: 'parent', label: 'Parent' },
   { value: 'child', label: 'Child' },
   { value: 'other', label: 'Other' },
+  { value: 'pet', label: 'Pet' },
 ];
 
 export default function MemberEditor() {

@@ -14,6 +14,12 @@ shows everyone's open items.
   you'd need to be up earlier than usual, it says so. Evenings end in *Your time* after lights out. Days that work out
   the same become one routine ("Mon, Tue, Wed, Thu", "Friday", "Evenings"). The logic is in `lib/onboarding.ts`, with
   unit tests.
+- **Trips both ways, creche and pets**: fixed times can have a finish time. Each trip lists drop-offs on the way
+  (creche, school, a partner's work) and pick-ups on the way home (a partner, creche). Akol leaves early enough for
+  everyone riding along, waits for a partner who finishes late, and books a cab reminder when nobody collects someone.
+  It then checks minute by minute that a grown-up or the creche has the kids, nights included, and flags any gap.
+  Pets are household members with a weekday and weekend plan (home, napping, puppy creche, comes along). Feeding and
+  walking slot into your routine.
 - **Checkpoints**: gather everything due before them across the family. You can tick items there or mark them all done.
 - **Timed reminders**: local notifications fire at the exact minute. Each one has a **Mark done ✓** button, and Akol
   skips the reminder if the item is already ticked.

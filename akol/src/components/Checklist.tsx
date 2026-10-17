@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   atTime,
   checkpointSummary,
+  formatDuration,
   formatTime,
   isDone,
   relative,
@@ -133,7 +134,7 @@ export function TaskRow({
                   <Text style={s.fixedText}>Fixed</Text>
                 </View>
               )}
-              {!!task.duration && <Text style={s.duration}>{task.duration} min</Text>}
+              {!!task.duration && <Text style={s.duration}>{formatDuration(task.duration)}</Text>}
               {task.alert === 'alarm' && <Ionicons name="alarm" size={13} color={colors.accentInk} />}
               {!!task.date && <Text style={s.tag}>One-off</Text>}
               {!!task.note && (

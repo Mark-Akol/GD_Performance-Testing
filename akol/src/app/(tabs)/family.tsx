@@ -9,7 +9,7 @@ import { dayKey, formatTime, nextUp, overdue, progress, streak, tasksForDay } fr
 import { useAkol, useNow } from '../../lib/store';
 import { colors, fonts, jewels, lining, space } from '../../theme';
 
-const ROLE: Record<string, string> = { parent: 'Parent', child: 'Child', other: 'Family' };
+const ROLE: Record<string, string> = { parent: 'Parent', child: 'Child', other: 'Family', pet: 'Pet' };
 
 export default function Family() {
   const { state, me } = useAkol();

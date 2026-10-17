@@ -7,7 +7,7 @@ export type ClockTime = string;
 /** "YYYY-MM-DD" in local time. */
 export type DayKey = string;
 
-export type MemberRole = 'parent' | 'child' | 'other';
+export type MemberRole = 'parent' | 'child' | 'other' | 'pet';
 
 export interface Member {
   id: string;

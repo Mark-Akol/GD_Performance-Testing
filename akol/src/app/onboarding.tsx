@@ -9,9 +9,8 @@ import { Chip, FadeIn, InkButton, tap } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
 import {
   ANCHOR_IDEAS,
-  BUFFER,
   ONE_OFF_IDEAS,
-  STOP_IDEAS,
+  PET_PLANS,
   STRUGGLES,
   buildPlan,
   defaultAnswers,
@@ -19,16 +18,21 @@ import {
   minutesOf,
   nameDays,
   newAnchor,
+  planDay,
   planWeek,
+  stopIdeas,
   suggestionsFor,
+  titleOf,
   type Anchor,
   type Household,
   type OnboardingAnswers,
   type Owner,
+  type PetPlan,
   type PlanItem,
   type RoutineKind,
+  type Stop,
 } from '../lib/onboarding';
-import { addDays, dayKey, formatTime, parseTime, toClockTime } from '../lib/schedule';
+import { addDays, dayKey, formatDuration, formatTime, parseTime, toClockTime } from '../lib/schedule';
 import { useAkol } from '../lib/store';
 import type { AkolState, Weekday } from '../lib/types';
 import { colors, fonts, jewels, radius, shadow, space } from '../theme';
@@ -37,6 +41,7 @@ type Step =
   | 'who'
   | 'name'
   | 'people'
+  | 'pets'
   | 'struggles'
   | 'wake'
   | 'anchors'
@@ -52,12 +57,31 @@ type Step =
 const named = (a: OnboardingAnswers) => a.anchors.filter((x) => x.title.trim());
 const hasMorningAnchor = (a: OnboardingAnswers) => named(a).some((x) => x.who === 'me' && parseTime(x.time) < 12 * 60);
 const DURATIONS = [5, 10, 15, 20, 30, 45, 60];
+const ROLE_LABEL: Record<string, string> = { child: 'Kid', parent: 'Adult', other: 'Adult', pet: 'Pet' };
+
+/** Remove someone, keeping everyone else's non-negotiables, stops and pet plans pointing at the right person. */
+function removePerson(a: OnboardingAnswers, n: number): OnboardingAnswers {
+  const shift = (i: number) => (i > n ? i - 1 : i);
+  const fixStops = (stops: Stop[]) =>
+    stops.filter((s) => s.person !== n).map((s) => (s.person === undefined ? s : { ...s, person: shift(s.person) }));
+  const petPlans: OnboardingAnswers['petPlans'] = {};
+  for (const [k, v] of Object.entries(a.petPlans)) if (Number(k) !== n) petPlans[shift(Number(k))] = v;
+  return {
+    ...a,
+    people: a.people.filter((_, k) => k !== n),
+    petPlans,
+    anchors: a.anchors
+      .filter((x) => x.who !== n)
+      .map((x) => ({ ...x, who: x.who === 'me' ? 'me' : shift(x.who), stops: fixStops(x.stops), back: fixStops(x.back) })),
+  };
+}
 
 function stepsFor(a: OnboardingAnswers): Step[] {
   return [
     'who',
     'name',
     ...(a.household === 'solo' ? [] : (['people'] as Step[])),
+    ...(a.household !== 'solo' && a.people.some((p) => p.role === 'pet' && p.name.trim()) ? (['pets'] as Step[]) : []),
     'struggles',
     'wake',
     'anchors',
@@ -118,7 +142,7 @@ export default function Onboarding() {
             ? a.anchors.every((x) => !x.title.trim() || x.days.length > 0)
             : true;
   const editAnchor = (id: string, patch: Partial<Anchor>) =>
-    set({ anchors: a.anchors.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+    setA((prev) => ({ ...prev, anchors: prev.anchors.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
 
   const pickHousehold = (household: Household) => {
     const people =
@@ -192,37 +216,83 @@ export default function Onboarding() {
               <TextInput
                 value={p.name}
                 onChangeText={(name) => set({ people: a.people.map((x, k) => (k === n ? { ...x, name } : x)) })}
-                placeholder={p.role === 'child' ? 'Child’s name' : 'Name'}
+                placeholder={p.role === 'child' ? 'Child’s name' : p.role === 'pet' ? 'Pet’s name' : 'Name'}
                 placeholderTextColor={colors.textFaint}
                 style={styles.personInput}
               />
               <Pressable
                 onPress={() =>
-                  set({ people: a.people.map((x, k) => (k === n ? { ...x, role: x.role === 'child' ? 'parent' : 'child' } : x)) })
+                  set({
+                    people: a.people.map((x, k) =>
+                      k === n ? { ...x, role: x.role === 'child' ? 'parent' : x.role === 'pet' ? 'child' : 'pet' } : x,
+                    ),
+                  })
                 }
                 style={styles.roleBtn}
                 accessibilityRole="button"
-                accessibilityLabel={`Switch ${p.name || 'person'} between kid and adult`}
+                accessibilityLabel={`${p.name || 'This person'} is ${ROLE_LABEL[p.role]}. Tap to change.`}
               >
-                <Text style={styles.roleText}>{p.role === 'child' ? 'Kid' : 'Adult'}</Text>
+                <Text style={styles.roleText}>{ROLE_LABEL[p.role]}</Text>
               </Pressable>
               {a.people.length > 1 && (
-                <Pressable hitSlop={8} onPress={() => set({ people: a.people.filter((_, k) => k !== n) })} accessibilityLabel="Remove">
+                <Pressable hitSlop={8} onPress={() => setA((prev) => removePerson(prev, n))} accessibilityLabel="Remove">
                   <Ionicons name="close" size={20} color={colors.textFaint} />
                 </Pressable>
               )}
             </View>
           ))}
-          <Pressable
-            onPress={() => set({ people: [...a.people, { name: '', role: 'child' }] })}
-            style={styles.addRow}
-            accessibilityRole="button"
-          >
-            <Text style={styles.addText}>+ Add someone</Text>
-          </Pressable>
+          <View style={styles.addPair}>
+            <Pressable
+              onPress={() => set({ people: [...a.people, { name: '', role: 'child' }] })}
+              style={[styles.addRow, { flex: 1 }]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.addText}>+ Add someone</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => set({ people: [...a.people, { name: '', role: 'pet' }] })}
+              style={[styles.addRow, { flex: 1 }]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.addText}>+ Add a pet 🐶</Text>
+            </Pressable>
+          </View>
         </View>
       );
       break;
+
+    case 'pets': {
+      const pets = a.people.map((p, n) => ({ p, n })).filter(({ p }) => p.role === 'pet' && p.name.trim());
+      title = pets.length === 1 ? `What’s ${pets[0].p.name.trim()}’s day?` : 'What’s your pets’ day?';
+      sub = 'We’ll plan drop-offs, pick-ups, walks and dinner around it.';
+      const planOf = (n: number) => a.petPlans[n] ?? { weekdays: 'home' as PetPlan, weekends: 'home' as PetPlan };
+      body = (
+        <View style={{ gap: space.md }}>
+          {pets.map(({ p, n }) => (
+            <View key={n} style={styles.anchorCard}>
+              <Text style={styles.pickHead}>🐶 {p.name.trim()}</Text>
+              {(['weekdays', 'weekends'] as const).map((when) => (
+                <View key={when} style={{ gap: space.sm }}>
+                  <Text style={styles.pickWho}>{when === 'weekdays' ? 'Weekdays' : 'Weekends'}</Text>
+                  <View style={styles.chipRow}>
+                    {PET_PLANS.map((o) => (
+                      <Chip
+                        key={o.id}
+                        label={`${o.label} ${o.emoji}`}
+                        active={planOf(n)[when] === o.id}
+                        color={colors.ink}
+                        onPress={() => set({ petPlans: { ...a.petPlans, [n]: { ...planOf(n), [when]: o.id } } })}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      );
+      break;
+    }
 
     case 'struggles':
       title = 'What do you struggle with?';
@@ -274,12 +344,23 @@ export default function Onboarding() {
       break;
 
     case 'travel':
-      title = 'How do you get there?';
-      sub = 'Journey time from home, plus any stops on the way. We add 5 spare minutes.';
+      title = 'How do you get there, and home?';
+      sub = 'Journey time from home, drop-offs on the way, and who picks up whom. We add 5 spare minutes.';
       body = (
         <View style={{ gap: space.md }}>
           {named(a).map((x) => (
-            <TravelCard key={x.id} x={x} who={x.who === 'me' ? 'You' : a.people[x.who]?.name || ''} onChange={(patch) => editAnchor(x.id, patch)} />
+            <TravelCard
+              key={x.id}
+              x={x}
+              a={a}
+              onChange={(patch) => editAnchor(x.id, patch)}
+              onPickUp={(person, on) =>
+                setA((prev) => ({
+                  ...prev,
+                  anchors: prev.anchors.map((y) => (y.who === person ? { ...y, home: on ? 'lift' : 'drive' } : y)),
+                }))
+              }
+            />
           ))}
         </View>
       );
@@ -326,7 +407,9 @@ export default function Onboarding() {
       sub = 'Untick what you don’t need, and tap a time to change how long it takes. We’ll fit it all in.';
       const all = suggestionsFor(a);
       const total = (r: RoutineKind, who: 'me' | 'kids') =>
-        all.filter((s) => s.routine === r && s.who === who && a.picks.includes(s.id)).reduce((n, s) => n + minutesOf(a, s), 0);
+        all
+          .filter((s) => s.routine === r && (s.who === who || (who === 'me' && s.who === 'pets')) && a.picks.includes(s.id))
+          .reduce((n, s) => n + minutesOf(a, s), 0);
       body = (
         <View style={{ gap: space.lg }}>
           {(['morning', 'evening'] as RoutineKind[])
@@ -355,8 +438,10 @@ export default function Onboarding() {
                         >
                           <View style={[styles.tick, on && styles.tickOn]}>{on && <Ionicons name="checkmark" size={16} color={colors.onAccent} />}</View>
                           <View style={{ flex: 1 }}>
-                            <Text style={[styles.pickTitle, !on && { color: colors.textFaint }]}>{s.title}</Text>
-                            <Text style={styles.pickWho}>{s.who === 'me' ? 'You' : kids.map((k) => k.name).join(' & ') || 'Kids'}</Text>
+                            <Text style={[styles.pickTitle, !on && { color: colors.textFaint }]}>{titleOf(a, s)}</Text>
+                            <Text style={styles.pickWho}>
+                              {s.who === 'me' ? 'You' : s.who === 'pets' ? 'You, for the pets' : kids.map((k) => k.name).join(' & ') || 'Kids'}
+                            </Text>
                           </View>
                         </Pressable>
                         <Pressable
@@ -367,7 +452,7 @@ export default function Onboarding() {
                           }}
                           style={[styles.minChip, !on && { opacity: 0.4 }]}
                           accessibilityRole="button"
-                          accessibilityLabel={`${s.title} takes ${mins} minutes. Tap to change.`}
+                          accessibilityLabel={`${titleOf(a, s)} takes ${mins} minutes. Tap to change.`}
                         >
                           <Text style={styles.minText}>{mins} min</Text>
                         </Pressable>
@@ -546,7 +631,10 @@ function AnchorCard({
   onChange: (patch: Partial<Anchor>) => void;
   onRemove: () => void;
 }) {
-  const whos: ('me' | number)[] = ['me', ...a.people.map((_, n) => n).filter((n) => a.household !== 'solo' && a.people[n].name.trim())];
+  const whos: ('me' | number)[] = [
+    'me',
+    ...a.people.map((_, n) => n).filter((n) => a.household !== 'solo' && a.people[n].name.trim() && a.people[n].role !== 'pet'),
+  ];
   return (
     <View style={styles.anchorCard}>
       <View style={styles.anchorHead}>
@@ -603,28 +691,75 @@ function AnchorCard({
         })}
       </View>
       <TimePicker value={x.time} onChange={(time) => onChange({ time })} />
+      {x.end ? (
+        <View style={{ gap: space.sm }}>
+          <View style={styles.anchorHead}>
+            <Text style={[styles.stepLabel, { fontSize: 15 }]}>Finishes at</Text>
+            <Pressable hitSlop={8} onPress={() => onChange({ end: undefined })} accessibilityRole="button">
+              <Text style={styles.linkText}>Remove</Text>
+            </Pressable>
+          </View>
+          <TimePicker value={x.end} onChange={(end) => onChange({ end })} />
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => onChange({ end: toClockTime(Math.min(parseTime(x.time) + 9 * 60, 23 * 60 + 55)) })}
+          style={styles.addRow}
+          accessibilityRole="button"
+        >
+          <Text style={styles.addText}>+ Add a finish time (to plan the trip home)</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
-/** Journey and stops for one non-negotiable, with the leave time worked out live. */
-function TravelCard({ x, who, onChange }: { x: Anchor; who: string; onChange: (patch: Partial<Anchor>) => void }) {
-  const stops = x.stops.reduce((n, s) => n + s.minutes, 0);
+/** Journey, drop-offs, and the trip home for one non-negotiable, with times worked out live. */
+function TravelCard({
+  x,
+  a,
+  onChange,
+  onPickUp,
+}: {
+  x: Anchor;
+  a: OnboardingAnswers;
+  onChange: (patch: Partial<Anchor>) => void;
+  onPickUp: (person: number, on: boolean) => void;
+}) {
+  const who = x.who === 'me' ? 'You' : a.people[x.who]?.name.trim() || '';
   const moving = x.travel > 0 || x.stops.length > 0;
-  const depart = parseTime(x.time) - x.travel - stops - (moving ? BUFFER : 0);
+  const day = x.days[0];
+  const planned = day === undefined ? [] : planDay(a, day).items;
+  const timeOf = (key: string) => planned.find((i) => i.key === key)?.time;
+  const leave = timeOf(`leave:${x.id}`);
+  const home = timeOf(`home:${x.id}`);
+  const nameFor = (w: 'me' | number) => (w === 'me' ? a.myName.trim() || 'you' : a.people[w]?.name.trim());
+  const driver =
+    typeof x.who === 'number' && parseTime(x.time) < 12 * 60
+      ? a.anchors.find((y) => y.title.trim() && y.days.some((d) => x.days.includes(d)) && y.stops.some((s) => s.person === x.who))
+      : undefined;
+  const pickedUpBy = typeof x.who === 'number' ? a.anchors.find((y) => y.end && y.back.some((s) => s.person === x.who)) : undefined;
   const step = (d: number) => onChange({ travel: Math.max(0, Math.min(180, x.travel + d)) });
+  const has = (list: Stop[], s: Stop) => list.some((y) => y.label === s.label);
+  const toggle = (field: 'stops' | 'back', s: Stop) => {
+    const on = has(x[field], s);
+    const next = on ? x[field].filter((y) => y.label !== s.label) : [...x[field], s];
+    onChange(field === 'stops' ? { stops: next } : { back: next });
+    if (field === 'back' && s.kind === 'person' && s.person !== undefined) onPickUp(s.person, !on);
+  };
   return (
     <View style={styles.anchorCard}>
       <View>
         <Text style={styles.pickTitle}>
           🔒 {x.title} · {formatTime(x.time)}
+          {x.end ? ` – ${formatTime(x.end)}` : ''}
         </Text>
         <Text style={styles.pickWho}>
           {who} · {nameDays(x.days)}
         </Text>
       </View>
       <View style={styles.stepRow}>
-        <Text style={styles.stepLabel}>Journey</Text>
+        <Text style={styles.stepLabel}>Journey from home</Text>
         <Pressable onPress={() => step(-5)} style={styles.stepBtn} accessibilityLabel="5 minutes less">
           <Ionicons name="remove" size={18} color={colors.ink} />
         </Pressable>
@@ -633,31 +768,54 @@ function TravelCard({ x, who, onChange }: { x: Anchor; who: string; onChange: (p
           <Ionicons name="add" size={18} color={colors.ink} />
         </Pressable>
       </View>
-      <View style={styles.chipRow}>
-        <Chip label="At home" active={!moving} color={colors.ink} onPress={() => onChange({ travel: 0, stops: [] })} />
-        {STOP_IDEAS.map((sp) => {
-          const on = x.stops.some((s) => s.label === sp.label);
-          return (
-            <Chip
-              key={sp.label}
-              label={`${sp.label} +${sp.minutes}`}
-              active={on}
-              color={colors.ink}
-              onPress={() => onChange({ stops: on ? x.stops.filter((s) => s.label !== sp.label) : [...x.stops, sp] })}
-            />
-          );
-        })}
-      </View>
-      {moving && (
-        <View style={styles.leaveBy}>
-          <Text style={styles.leaveByText}>Leave by {formatTime(toClockTime(depart))}</Text>
-        </View>
+      {driver ? (
+        <Text style={styles.pickWho}>🚗 Rides with {nameFor(driver.who)} in the morning</Text>
+      ) : (
+        <>
+          <Text style={styles.wayLabel}>On the way there</Text>
+          <View style={styles.chipRow}>
+            <Chip label="At home" active={!moving} color={colors.ink} onPress={() => onChange({ travel: 0, stops: [] })} />
+            {stopIdeas(a, x, 'there').map((sp) => (
+              <Chip key={sp.label} label={`${sp.label} +${sp.minutes}`} active={has(x.stops, sp)} color={colors.ink} onPress={() => toggle('stops', sp)} />
+            ))}
+          </View>
+          {leave && (
+            <View style={styles.leaveBy}>
+              <Text style={styles.leaveByText}>Leave by {formatTime(leave)}</Text>
+            </View>
+          )}
+        </>
+      )}
+      {x.end && (moving || driver) && (
+        <>
+          <Text style={styles.wayLabel}>Getting home</Text>
+          {pickedUpBy ? (
+            <Text style={styles.pickWho}>🚗 Picked up by {nameFor(pickedUpBy.who)}</Text>
+          ) : (
+            <>
+              <View style={styles.chipRow}>
+                <Chip label="Drive home" active={x.home !== 'cab'} color={colors.ink} onPress={() => onChange({ home: 'drive' })} />
+                <Chip label="Cab 🚕" active={x.home === 'cab'} color={colors.ink} onPress={() => onChange({ home: 'cab', back: [] })} />
+              </View>
+              {x.home !== 'cab' && (
+                <View style={styles.chipRow}>
+                  {stopIdeas(a, x, 'back').map((sp) => (
+                    <Chip key={sp.label} label={`${sp.label} +${sp.minutes}`} active={has(x.back, sp)} color={colors.ink} onPress={() => toggle('back', sp)} />
+                  ))}
+                </View>
+              )}
+              {home && (
+                <View style={styles.leaveBy}>
+                  <Text style={styles.leaveByText}>Home by {formatTime(home)}</Text>
+                </View>
+              )}
+            </>
+          )}
+        </>
       )}
     </View>
   );
 }
-
-const hm = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`);
 
 const KIND_ICON: Partial<Record<PlanItem['kind'], string>> = {
   wake: '⏰',
@@ -665,6 +823,8 @@ const KIND_ICON: Partial<Record<PlanItem['kind'], string>> = {
   fixed: '🔒',
   'lights-out': '🌙',
   'get-ready': '👟',
+  drop: '🚗',
+  pickup: '🚗',
 };
 
 /** The planned days, one group at a time, with how each one balances out. */
@@ -695,9 +855,36 @@ function PlanPreview({ a }: { a: OnboardingAnswers }) {
           </Text>
           <Text style={styles.insightSmall}>
             Wake {formatTime(insight.wake)}
-            {insight.sleepIn >= 30 ? ` (a ${hm(insight.sleepIn)} lie-in)` : ''}
+            {insight.sleepIn >= 30 ? ` (a ${formatDuration(insight.sleepIn)} lie-in)` : ''}
             {insight.leave ? ` · leave ${formatTime(insight.leave)}` : ''}
           </Text>
+        </View>
+      )}
+      {group.part === 'day' && insight.creche && (
+        <View style={styles.careRow}>
+          <Text style={styles.careText}>
+            🧸 {kidNames} at creche {formatTime(insight.creche.from)}
+            {insight.creche.to ? ` – ${formatTime(insight.creche.to)} · ${insight.creche.by} collects` : ''}
+          </Text>
+        </View>
+      )}
+      {group.part === 'day' &&
+        insight.gaps.map((g, n) => (
+          <View key={`gap${n}`} style={[styles.careRow, styles.warnRow]}>
+            <Text style={styles.careText}>
+              ⚠️ Nobody is with {kidNames} {formatTime(g.from)} – {formatTime(g.to)}
+            </Text>
+          </View>
+        ))}
+      {group.part === 'day' &&
+        insight.warnings.map((w, n) => (
+          <View key={`warn${n}`} style={[styles.careRow, styles.warnRow]}>
+            <Text style={styles.careText}>⚠️ {w}</Text>
+          </View>
+        ))}
+      {group.part === 'day' && !!kidNames && !insight.gaps.length && !insight.warnings.length && !!insight.creche?.to && (
+        <View style={styles.careRow}>
+          <Text style={styles.careText}>✅ {kidNames} always has a grown-up or the creche</Text>
         </View>
       )}
       <View style={styles.planList}>
@@ -712,7 +899,7 @@ function PlanPreview({ a }: { a: OnboardingAnswers }) {
                   {it.title}
                 </Text>
                 <Text style={styles.planWho}>
-                  {[ownerName(it.owner), it.minutes ? `${it.minutes} min` : null, it.note].filter(Boolean).join(' · ')}
+                  {[ownerName(it.owner), it.minutes ? formatDuration(it.minutes) : null, it.note].filter(Boolean).join(' · ')}
                 </Text>
               </View>
             </View>
@@ -797,6 +984,12 @@ const styles = StyleSheet.create({
   minChip: { backgroundColor: colors.bgRaised, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 },
   minText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.text },
   anchorCard: { backgroundColor: colors.card, borderRadius: 22, padding: space.lg, gap: space.md },
+  addPair: { flexDirection: 'row', gap: space.sm },
+  linkText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accentInk },
+  wayLabel: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', color: colors.textDim },
+  careRow: { backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: space.lg, paddingVertical: space.md },
+  warnRow: { backgroundColor: '#FFF4DB' },
+  careText: { fontFamily: fonts.medium, fontSize: 14, lineHeight: 20, color: colors.text },
   anchorHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   anchorTitle: { flex: 1, fontFamily: fonts.display, fontSize: 19, color: colors.text, paddingVertical: 4 },
   dayRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 4 },
