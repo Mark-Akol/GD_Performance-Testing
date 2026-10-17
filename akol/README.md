@@ -147,7 +147,7 @@ The best experience is a development build, which gives full notification suppor
 ## Ship it (cheapest path)
 
 1. Create a free Expo account, then run `npx eas-cli@latest init` to link the project.
-2. Change `ios.bundleIdentifier` and `android.package` in `app.json` (currently `app.akol.family`) to identifiers you own.
+2. Change `ios.bundleIdentifier` and `android.package` in `app.json` (now `app.akol.acall`) only if you need to; they can never change once the app is in a store.
 3. Replace the placeholder icons in `assets/`: `icon.png` (1024×1024) and the Android adaptive icon layers.
 4. `npx eas-cli@latest build --profile production --platform all`, then `npx eas-cli@latest submit`.
 

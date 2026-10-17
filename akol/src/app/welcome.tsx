@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { Fleuron } from '../components/Rules';
 import { Card, FadeIn, Field, GhostButton, InkButton, Screen } from '../components/ui';
@@ -40,6 +40,7 @@ export default function Welcome() {
           <Text style={styles.small}>Vol. 1</Text>
           <Text style={styles.small}>The family, on time</Text>
         </View>
+        <Image source={require('../../assets/icon.png')} style={styles.mark} accessibilityIgnoresInvertColors />
         <Text style={styles.word}>AKOL</Text>
         <Text style={styles.tag}>the family, on time</Text>
       </FadeIn>
@@ -79,6 +80,7 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
+  mark: { width: 76, height: 76, borderRadius: 18, borderWidth: 1, borderColor: colors.hairline, marginTop: space.lg },
   coverTop: { flexDirection: 'row', justifyContent: 'space-between' },
   small: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.text },
   word: {
