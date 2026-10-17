@@ -91,6 +91,8 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
+            <Stack.Screen name="onboarding" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="join" />
             <Stack.Screen name="member/[id]" />
             <Stack.Screen name="routine/[id]" />
             <Stack.Screen name="task" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />

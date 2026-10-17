@@ -6,6 +6,10 @@ shows everyone's open items.
 
 - **My checklist**: the device owner's own list (for example Mark, the dad).
 - **Whole family**: every member's items on one timeline, with a colour for each person.
+- **Guided setup**: a short questionnaire, in the style of Routinery, builds your week. It asks who it's for, your
+  names, what you struggle with, morning and/or evening, when you leave and when it's lights out. It then lets you
+  untick suggested tasks, add one-offs and choose notification or alarm. Tasks are timed backwards from Go time.
+  `lib/onboarding.ts` holds the logic and is unit-tested.
 - **Checkpoints**: gather everything due before them across the family. You can tick items there or mark them all done.
 - **Timed reminders**: local notifications fire at the exact minute. Each one has a **Mark done ✓** button, and Akol
   skips the reminder if the item is already ticked.
