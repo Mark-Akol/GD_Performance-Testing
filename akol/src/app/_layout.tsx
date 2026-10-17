@@ -1,10 +1,11 @@
-import { Anton_400Regular, useFonts } from '@expo-google-fonts/anton';
 import {
-  ArchivoNarrow_400Regular,
-  ArchivoNarrow_500Medium,
-  ArchivoNarrow_600SemiBold,
-  ArchivoNarrow_700Bold,
-} from '@expo-google-fonts/archivo-narrow';
+  Nunito_500Medium,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  Nunito_800ExtraBold,
+  Nunito_900Black,
+  useFonts,
+} from '@expo-google-fonts/nunito';
 import { PermanentMarker_400Regular } from '@expo-google-fonts/permanent-marker';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -55,12 +56,12 @@ function NotificationBridge() {
 function Gate({ children }: { children: React.ReactNode }) {
   const { ready } = useAkol();
   const [fontsLoaded] = useFonts({
-    Anton_400Regular,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+    Nunito_900Black,
     PermanentMarker_400Regular,
-    ArchivoNarrow_400Regular,
-    ArchivoNarrow_500Medium,
-    ArchivoNarrow_600SemiBold,
-    ArchivoNarrow_700Bold,
   });
   if (!ready || !fontsLoaded) {
     return (
@@ -76,7 +77,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AkolProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <Gate>
           {/* Inside the gate so a tapped reminder can navigate once the router is mounted. */}
           <NotificationBridge />

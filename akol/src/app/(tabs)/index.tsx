@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Lockup } from '../../components/Lockup';
-import { Avatar } from '../../components/Avatar';
+import { Avatar, ProgressRing, jewelFor } from '../../components/Avatar';
 import { Timeline } from '../../components/Checklist';
 import { Card, Dim, FadeIn, GhostButton, InkButton, Screen, SectionHeader, Segmented } from '../../components/ui';
 import {
@@ -15,7 +15,7 @@ import {
   nextUp,
   overdue,
   progress,
-  relative,
+  streak,
   tasksForDay,
 } from '../../lib/schedule';
 import { useAkol, useNow } from '../../lib/store';
@@ -51,104 +51,123 @@ export default function Today() {
 
   const groups = useMemo(() => groupByRoutine(visible), [visible]);
 
-  const nextWho = next ? (next.task.memberId === FAMILY_ID ? 'the whole crew' : member(next.task.memberId)?.name) : undefined;
+  const nextMember = next ? member(next.task.memberId) : undefined;
+  const nextJewel = next ? jewelFor(nextMember, next.task.memberId) : null;
+  const nextWho = next ? (next.task.memberId === FAMILY_ID ? 'Everyone' : nextMember?.name) : undefined;
   const dateLine = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const minsToNext = next ? Math.round((atTime(now, next.task.time).getTime() - now.getTime()) / 60000) : 0;
+  const myStreak = me ? streak(state, me.id, now) : 0;
 
   return (
     <Screen>
       <FadeIn>
         <View style={styles.top}>
           <View style={{ flex: 1 }}>
-            <View style={styles.brandRow}>
-              <Lockup size={36} />
-            </View>
-            <Text style={styles.date}>{dateLine}</Text>
-            {state.settings.demoClock && (
-              <Pressable
-                onPress={() => dispatch({ type: 'settings', patch: { demoClock: null } })}
-                style={styles.demo}
-                accessibilityRole="button"
-              >
-                <Text style={styles.demoText}>
-                  ● Demo clock {formatTime(`${now.getHours()}:${now.getMinutes()}`)} · tap for real time
-                </Text>
-              </Pressable>
-            )}
+            <Lockup size={36} />
           </View>
           <Pressable onPress={() => router.push('/settings')} accessibilityLabel="Settings">
-            <Avatar member={me} size={50} ratio={progress(mine, state.completions, today).ratio} />
+            <Avatar member={me} size={48} ratio={progress(mine, state.completions, today).ratio} />
           </Pressable>
         </View>
       </FadeIn>
 
-      <FadeIn delay={100}>
-        <Text style={styles.greeting}>{greeting(now)},</Text>
-        <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit>
-          {(me?.name ?? 'there').toUpperCase()}.
+      <FadeIn delay={80}>
+        <Text style={styles.date}>{dateLine}</Text>
+        <Text style={styles.greeting} numberOfLines={1} adjustsFontSizeToFit>
+          {greeting(now)}, {me?.name ?? 'there'} 👋
         </Text>
+        {state.settings.demoClock && (
+          <Pressable
+            onPress={() => dispatch({ type: 'settings', patch: { demoClock: null } })}
+            style={styles.demo}
+            accessibilityRole="button"
+          >
+            <Text style={styles.demoText}>
+              Demo clock {formatTime(`${now.getHours()}:${now.getMinutes()}`)} · tap for real time
+            </Text>
+          </Pressable>
+        )}
       </FadeIn>
 
-      {/* Now playing */}
-      <FadeIn delay={320}>
-        <View style={styles.lead}>
-          <View style={styles.leadTop}>
-            <Text style={styles.leadLabel}>{allDone ? 'Album complete' : next ? (next.status === 'due' ? '▶ Now playing' : 'Up next') : 'Today'}</Text>
-            {next && !allDone && <Text style={styles.leadLabel}>{relative(atTime(now, next.task.time), now)}</Text>}
-          </View>
-          <Text style={styles.leadTitle}>
-            {allDone ? 'All tracks played.' : next ? next.task.title : p.total ? 'That’s a wrap.' : 'Quiet day.'}
-          </Text>
-          {next && !allDone && (
-            <View style={styles.leadMeta}>
-              <View style={styles.timePill}>
-                <Text style={styles.timePillText}>{formatTime(next.task.time)}</Text>
-              </View>
-              {nextWho && <Text style={styles.feat}>feat. {nextWho}</Text>}
+      {/* Up next, with a countdown ring */}
+      <FadeIn delay={200}>
+        <Card style={styles.lead}>
+          <View style={styles.ringWrap}>
+            <ProgressRing
+              size={96}
+              stroke={9}
+              ratio={allDone ? 1 : next ? (next.status === 'due' || minsToNext <= 0 ? 1 : 1 - Math.min(60, minsToNext) / 60) : 0}
+              color={allDone ? colors.success : next?.status === 'due' || minsToNext <= 0 ? colors.accent : (nextJewel?.base ?? colors.ink)}
+            />
+            <View style={styles.ringCenter}>
+              {allDone ? (
+                <Text style={styles.ringEmoji}>🎉</Text>
+              ) : next && minsToNext > 0 ? (
+                <>
+                  <Text style={styles.ringNum}>{minsToNext >= 60 ? Math.round(minsToNext / 60) : minsToNext}</Text>
+                  <Text style={styles.ringUnit}>{minsToNext >= 60 ? 'hr' : 'min'}</Text>
+                </>
+              ) : (
+                <Text style={[styles.ringNum, { color: colors.accent, fontSize: 20 }]}>{next ? 'Now' : '—'}</Text>
+              )}
             </View>
-          )}
-          <View style={styles.stats}>
-            <Stat value={`${p.done}/${p.total}`} label="Played" />
-            <View style={styles.statRule} />
-            <Stat value={String(late.length)} label="Late" />
-            <View style={styles.statRule} />
-            <Stat value={`${Math.round(p.ratio * 100)}%`} label="Done" />
           </View>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={styles.leadLabel}>{allDone ? 'All done' : next ? (next.status === 'due' ? 'Right now' : 'Up next') : 'Today'}</Text>
+            <Text style={styles.leadTitle} numberOfLines={3}>
+              {allDone ? 'Everything’s ticked. Nice!' : next ? next.task.title : p.total ? 'That’s a wrap.' : 'A quiet day.'}
+            </Text>
+            {next && !allDone && (
+              <View style={styles.leadMeta}>
+                <View style={[styles.timePill, { backgroundColor: nextJewel?.tint ?? colors.bgRaised }]}>
+                  <Text style={styles.timePillText}>{formatTime(next.task.time)}</Text>
+                </View>
+                {nextWho && <Text style={styles.feat}>{nextWho}</Text>}
+              </View>
+            )}
+          </View>
+        </Card>
+      </FadeIn>
+
+      {/* Rewards */}
+      <FadeIn delay={280}>
+        <View style={styles.stats}>
+          <Stat emoji="⭐" value={String(p.done)} label={p.done === 1 ? 'star' : 'stars'} />
+          <Stat emoji="🔥" value={String(myStreak)} label="day streak" />
+          <Stat emoji="⏰" value={String(late.length)} label="late" alert={late.length > 0} />
         </View>
       </FadeIn>
 
-      <FadeIn delay={420} style={{ marginTop: space.xl }}>
+      <FadeIn delay={360} style={{ marginTop: space.xl }}>
         <Segmented<Scope>
           value={scope}
           onChange={setScope}
           options={[
-            { value: 'mine', label: 'My tracks' },
-            { value: 'family', label: 'Whole crew' },
+            { value: 'mine', label: 'Mine' },
+            { value: 'family', label: 'Whole family' },
           ]}
-        />
-        <GhostButton
-          label="+ One-off task"
-          onPress={() => router.push({ pathname: '/task', params: { oneOff: '1' } })}
-          style={{ marginTop: space.md }}
         />
       </FadeIn>
 
       {groups.length === 0 ? (
         <Card style={{ marginTop: space.xl, alignItems: 'center', gap: space.md }}>
-          <Text style={styles.quiet}>No tracks today.</Text>
-          <Dim style={{ textAlign: 'center' }}>Enjoy the quiet, or cut a new routine.</Dim>
+          <Text style={styles.quiet}>Nothing on today</Text>
+          <Dim style={{ textAlign: 'center' }}>Enjoy the quiet, or plan a routine.</Dim>
           <InkButton label="Plan a routine" onPress={() => router.push('/routines')} />
         </Card>
       ) : (
         groups.map((g, i) => {
           const gp = progress(g.tasks, state.completions, today);
           return (
-            <FadeIn key={g.routineId} delay={500 + i * 80}>
+            <FadeIn key={g.routineId} delay={420 + i * 80}>
               <SectionHeader
                 title={`${routine(g.routineId)?.name ?? 'Routine'}`}
                 right={
-                  <Text style={styles.groupCount}>
-                    {gp.done}/{gp.total}
-                  </Text>
+                  <View style={styles.groupCount}>
+                    <Text style={styles.groupCountText}>
+                      {gp.done}/{gp.total}
+                    </Text>
+                  </View>
                 }
               />
               <Timeline tasks={g.tasks} day={today} now={now} showMember={scope === 'family'} />
@@ -156,58 +175,69 @@ export default function Today() {
           );
         })
       )}
-      <Text style={styles.outro}>Tap a track to mark it played · press and hold to edit</Text>
+      <GhostButton
+        label="+ One-off task"
+        onPress={() => router.push({ pathname: '/task', params: { oneOff: '1' } })}
+        style={{ marginTop: space.lg }}
+      />
+      <Text style={styles.outro}>Tap to tick · press and hold to edit</Text>
     </Screen>
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ emoji, value, label, alert }: { emoji: string; value: string; label: string; alert?: boolean }) {
   return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={[styles.stat, alert && { backgroundColor: colors.accentSoft }]}>
+      <Text style={styles.statEmoji}>{emoji}</Text>
+      <View>
+        <Text style={[styles.statValue, alert && { color: colors.accent }]}>{value}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  top: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.sm },
-  date: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.textDim },
+  top: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  date: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', color: colors.textDim, marginTop: space.xl },
+  greeting: { fontFamily: fonts.display, fontSize: 30, lineHeight: 38, color: colors.text, marginTop: 2 },
   demo: {
     alignSelf: 'flex-start',
     marginTop: space.sm,
-    borderWidth: 1,
-    borderColor: colors.hairline,
+    backgroundColor: colors.bgRaised,
     borderRadius: radius.pill,
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
-  demoText: { fontFamily: fonts.medium, fontSize: 11.5, color: colors.textDim },
-  greeting: { fontFamily: fonts.italic, fontSize: 24, color: colors.text, marginTop: space.xl, transform: [{ rotate: '-2deg' }] },
-  name: { fontFamily: fonts.display, fontSize: 112, lineHeight: 124, color: colors.text, letterSpacing: 1 },
-  lead: { backgroundColor: colors.ink, padding: space.xl, marginTop: space.xl },
-  leadTop: { flexDirection: 'row', justifyContent: 'space-between' },
-  leadLabel: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.onPaper },
-  leadTitle: {
-    fontFamily: fonts.display,
-    fontSize: 52,
-    lineHeight: 60,
-    letterSpacing: 0.5,
-    color: colors.onPaper,
-    marginTop: space.sm,
-    textTransform: 'uppercase',
+  demoText: { fontFamily: fonts.medium, fontSize: 12, color: colors.textDim },
+  lead: { marginTop: space.lg, flexDirection: 'row', alignItems: 'center', gap: space.lg, padding: space.lg },
+  ringWrap: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: { position: 'absolute', alignItems: 'center' },
+  ringNum: { fontFamily: fonts.display, fontSize: 28, lineHeight: 32, color: colors.text, ...lining },
+  ringUnit: { fontFamily: fonts.medium, fontSize: 12, color: colors.textDim, marginTop: -2 },
+  ringEmoji: { fontSize: 34 },
+  leadLabel: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', color: colors.accent },
+  leadTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 27, color: colors.text },
+  leadMeta: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: 2, flexWrap: 'wrap' },
+  timePill: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 },
+  timePillText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.text, ...lining },
+  feat: { fontFamily: fonts.medium, fontSize: 13, color: colors.textDim },
+  stats: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
+  stat: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
   },
-  leadMeta: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.md, flexWrap: 'wrap' },
-  timePill: { borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 5, backgroundColor: colors.onPaper },
-  timePillText: { fontFamily: fonts.semibold, fontSize: 13, letterSpacing: 1, color: colors.ink, ...lining },
-  feat: { fontFamily: fonts.italic, fontSize: 19, color: colors.onPaper, transform: [{ rotate: '-2deg' }] },
-  stats: { flexDirection: 'row', marginTop: space.xl, paddingTop: space.md, borderTopWidth: 2, borderTopColor: colors.onPaper },
-  stat: { flex: 1, alignItems: 'center' },
-  statRule: { width: 2, backgroundColor: colors.onPaper },
-  statValue: { fontFamily: fonts.display, fontSize: 34, color: colors.onPaper, ...lining },
-  statLabel: { fontFamily: fonts.semibold, fontSize: 10, letterSpacing: 2.6, textTransform: 'uppercase', color: 'rgba(0,0,0,0.6)' },
-  groupCount: { fontFamily: fonts.display, fontSize: 18, color: colors.text, ...lining },
-  quiet: { fontFamily: fonts.display, fontSize: 34, color: colors.text, textTransform: 'uppercase' },
-  outro: { fontFamily: fonts.italic, textAlign: 'center', fontSize: 14, marginTop: space.xl, color: colors.textFaint },
+  statEmoji: { fontSize: 20 },
+  statValue: { fontFamily: fonts.display, fontSize: 18, lineHeight: 22, color: colors.text, ...lining },
+  statLabel: { fontFamily: fonts.medium, fontSize: 11, color: colors.textDim },
+  groupCount: { backgroundColor: colors.bgRaised, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 2 },
+  groupCountText: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDim, ...lining },
+  quiet: { fontFamily: fonts.display, fontSize: 24, color: colors.text },
+  outro: { fontFamily: fonts.medium, textAlign: 'center', fontSize: 13, marginTop: space.lg, color: colors.textFaint },
 });

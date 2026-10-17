@@ -6,24 +6,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { tap } from '../../components/ui';
 import { useAkol } from '../../lib/store';
-import { colors, fonts, radius } from '../../theme';
+import { colors, fonts, radius, shadow } from '../../theme';
 
 type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 const TABS: { name: string; title: string }[] = [
   { name: 'index', title: 'Today' },
-  { name: 'family', title: 'Crew' },
+  { name: 'family', title: 'Family' },
   { name: 'routines', title: 'Routines' },
   { name: 'settings', title: 'Settings' },
 ];
 
-/** A floating black capsule; the current tab is a solid white pill. */
+/** A floating white capsule; the current tab is a solid ink pill. */
 function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.wrap, { bottom: insets.bottom + 14 }]} pointerEvents="box-none">
       <View style={styles.capsule}>
-        {Platform.OS !== 'android' && <BlurView tint="dark" intensity={40} style={StyleSheet.absoluteFill} />}
+        {Platform.OS !== 'android' && <BlurView tint="light" intensity={50} style={[StyleSheet.absoluteFill, { borderRadius: radius.pill, overflow: "hidden" }]} />}
         {state.routes.map((route, i) => {
           const focused = state.index === i;
           const title = TABS.find((t) => t.name === route.name)?.title ?? route.name;
@@ -74,16 +74,16 @@ const styles = StyleSheet.create({
     height: 62,
     flexDirection: 'row',
     borderRadius: radius.pill,
-    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.hairlineStrong,
-    backgroundColor: 'rgba(0,0,0,0.88)',
+    borderColor: colors.hairline,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    ...shadow,
     padding: 5,
     ...(Platform.OS === 'web' ? ({ backdropFilter: 'blur(18px)' } as object) : {}),
   },
   item: { flex: 1 },
   pill: { flex: 1, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   pillActive: { backgroundColor: colors.ink },
-  label: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.textDim },
+  label: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDim },
   labelActive: { color: colors.onPaper },
 });

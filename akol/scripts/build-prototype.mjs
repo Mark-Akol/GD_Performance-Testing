@@ -18,9 +18,8 @@ let bundle = readFileSync(join(dist, bundlePath), 'utf8');
 // registry but are never requested.
 const USED = [
   /Ionicons\.[a-f0-9]+\.ttf$/,
-  /Anton_400Regular\.[a-f0-9]+\.ttf$/,
   /PermanentMarker_400Regular\.[a-f0-9]+\.ttf$/,
-  /ArchivoNarrow_(400Regular|500Medium|600SemiBold|700Bold)\.[a-f0-9]+\.ttf$/,
+  /Nunito_(500Medium|600SemiBold|700Bold|800ExtraBold|900Black)\.[a-f0-9]+\.ttf$/,
   /\.png$/,
   /akol_time_to_go\.[a-f0-9]+\.wav$/,
 ];

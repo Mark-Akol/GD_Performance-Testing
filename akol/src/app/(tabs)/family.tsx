@@ -22,7 +22,7 @@ export default function Family() {
   return (
     <Screen>
       <Eyebrow>The household</Eyebrow>
-      <Display style={{ marginTop: 6 }}>The crew</Display>
+      <Display style={{ marginTop: 6 }}>Your family</Display>
 
       <Card glow style={{ marginTop: space.xl }}>
         <View style={styles.summary}>

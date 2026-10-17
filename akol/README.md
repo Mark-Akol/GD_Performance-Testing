@@ -31,16 +31,19 @@ shows everyone's open items.
   <img src="docs/screenshots/family.png" width="200" alt="Family overview" />
 </p>
 
-**Design: Side A.** Black and white, hip hop. Tasks are tracks and the family is the crew. The next task is billed
-*Now playing / Up next* in a solid white panel, credited *feat. Ra*. Go time is *Showtime*, a white panel with a
-"Family Advisory: Explicit Punctuality" sticker. Type is Anton for poster lettering, Permanent Marker for
-hand-tagged asides, and Archivo Narrow for body text. Earlier looks are in git history: kente (`45d6d55`),
-broadsheet (`719242a`), Dial (`195c29d`), manga (`4de31a8`), gold orrery (`532c8c6`), Maison (`77c5f29`) and Side A
-with a spinning record (`bdd2e44`).
+**Design: Side B.** Warm and light, with one loud colour. It borrows the best of the field:
+- Tiimo's soft colour blocks on a timeline.
+- Routinery's countdown ring for what's up next.
+- Cozi's colour for each family member.
+- Brili's stars and streaks for the kids.
+- Alarmy's urgent coral for alarms and Go time.
+
+The black Akol mark and the marker-pen tagline *just a-call away* keep the hip hop edge. Type is Nunito. The bold
+black-and-white Side A is in git history (`3492527`).
 
 **Clickable prototype:** `npx expo export -p web && npm run prototype` writes `dist/akol-prototype.html`, a single
 self-contained page with the fonts embedded. It can be hosted anywhere. When you pick the example family on the web,
-Akol turns on a *demo clock* (6:48 a.m. on weekdays), so the morning routine is live whatever the time. Turn it off in
+Akol turns on a *demo clock* (6:48 a.m. on weekdays, 8:40 a.m. at weekends), so the morning routine is live whatever the time. Turn it off in
 Settings or by tapping the pill on Today.
 
 ## Tech (chosen to keep costs low for a solo founder)

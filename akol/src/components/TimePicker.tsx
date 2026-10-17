@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.hairline,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: colors.card,
   },
   col: { alignItems: 'center', width: 76 },
   arrow: { padding: 6 },

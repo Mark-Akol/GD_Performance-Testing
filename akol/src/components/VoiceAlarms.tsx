@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  script: { fontFamily: fonts.display, fontSize: 22, letterSpacing: 0.5, color: colors.text, textTransform: 'uppercase' },
+  script: { fontFamily: fonts.display, fontSize: 20, color: colors.text },
   meter: { height: 4, backgroundColor: colors.hairline },
-  meterFill: { height: 4, backgroundColor: colors.text },
+  meterFill: { height: 4, backgroundColor: colors.accent },
 });

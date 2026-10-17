@@ -234,10 +234,10 @@ export function BackupCard() {
 }
 
 const styles = StyleSheet.create({
-  head: { fontFamily: fonts.display, fontSize: 18, letterSpacing: 1, color: colors.text, textTransform: 'uppercase' },
+  head: { fontFamily: fonts.display, fontSize: 17, color: colors.text },
   small: { fontSize: 13, lineHeight: 19 },
   code: { fontFamily: fonts.display, fontSize: 40, letterSpacing: 4, color: colors.text },
-  status: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.text },
+  status: { fontFamily: fonts.semibold, fontSize: 13, color: colors.success },
   divider: { height: 1, backgroundColor: colors.hairline },
   input: {
     fontFamily: fonts.display,

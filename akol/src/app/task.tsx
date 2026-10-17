@@ -33,7 +33,7 @@ import {
 import { uid } from '../lib/seed';
 import { useAkol, useNow } from '../lib/store';
 import type { DayKey, Task } from '../lib/types';
-import { colors, familyJewel, fonts, jewels, space } from '../theme';
+import { colors, familyJewel, fonts, jewels, radius, space } from '../theme';
 
 const SUGGESTIONS = ['Brush teeth', 'Pack lunch', 'Get dressed', 'Bags in the car', 'Homework check', 'Water bottle', 'Medication', 'Feed the pet'];
 const ONE_OFF_SUGGESTIONS = ['Dentist', 'Haircut', 'Pick up parcel', 'Swimming kit', 'School trip money', 'Birthday present', 'Parents’ evening'];
@@ -243,6 +243,7 @@ export default function TaskEditor() {
         />
         <Choice
           active={alertChoice === 'alarm'}
+          loud
           title="Alarm"
           sub="rings until done"
           onPress={() => set({ remind: true, alert: 'alarm' })}
@@ -301,7 +302,19 @@ export default function TaskEditor() {
   );
 }
 
-function Choice({ active, title, sub, onPress }: { active: boolean; title: string; sub: string; onPress: () => void }) {
+function Choice({
+  active,
+  title,
+  sub,
+  onPress,
+  loud,
+}: {
+  active: boolean;
+  title: string;
+  sub: string;
+  onPress: () => void;
+  loud?: boolean;
+}) {
   return (
     <Pressable
       accessibilityRole="radio"
@@ -310,7 +323,7 @@ function Choice({ active, title, sub, onPress }: { active: boolean; title: strin
         tap();
         onPress();
       }}
-      style={[styles.choice, active && styles.choiceActive]}
+      style={[styles.choice, active && styles.choiceActive, active && loud && { backgroundColor: colors.accent, borderColor: colors.accent }]}
     >
       <Text style={[styles.choiceTitle, active && { color: colors.onPaper }]}>{title}</Text>
       <Text style={[styles.choiceSub, active && { color: colors.onPaper }]}>{sub}</Text>
@@ -325,23 +338,26 @@ const styles = StyleSheet.create({
   choice: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: colors.hairlineStrong,
+    borderColor: colors.hairline,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
     paddingVertical: space.md,
     paddingHorizontal: space.sm,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  choiceActive: { backgroundColor: colors.ink },
-  choiceTitle: { fontFamily: fonts.display, fontSize: 18, letterSpacing: 0.8, textTransform: 'uppercase', color: colors.text },
-  choiceSub: { fontFamily: fonts.italic, fontSize: 12, color: colors.textDim, marginTop: 2, textAlign: 'center' },
+  choiceActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  choiceTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: colors.text, textAlign: 'center' },
+  choiceSub: { fontFamily: fonts.light, fontSize: 12, color: colors.textDim, marginTop: 2, textAlign: 'center' },
   dateStepper: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.hairline,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
     paddingVertical: space.md,
     paddingHorizontal: space.lg,
   },
-  dateText: { fontFamily: fonts.display, fontSize: 24, letterSpacing: 1, color: colors.text, textTransform: 'uppercase' },
+  dateText: { fontFamily: fonts.display, fontSize: 20, color: colors.text },
   alarmHint: { fontSize: 13, marginTop: space.sm },
 });

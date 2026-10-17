@@ -21,8 +21,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fonts, gradients, radius, space } from '../theme';
-import { Dingbat, Fleuron } from './Rules';
+import { colors, fonts, gradients, radius, shadow, space } from '../theme';
+import { Fleuron } from './Rules';
 
 export function tap(kind: 'light' | 'medium' | 'success' = 'light') {
   if (Platform.OS === 'web') return;
@@ -36,7 +36,7 @@ export function tap(kind: 'light' | 'medium' | 'success' = 'light') {
 /** Glass needs something behind it: on web, blur what's underneath. */
 const glassBlur: ViewStyle = Platform.OS === 'web' ? ({ backdropFilter: 'blur(18px) saturate(140%)' } as ViewStyle) : {};
 
-/** Pure black behind every page. */
+/** The warm page behind every screen. */
 export function Ambient() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -49,7 +49,7 @@ export function Ambient() {
 export function FadeIn({ children, delay = 0, style }: { children: ReactNode; delay?: number; style?: StyleProp<ViewStyle> }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(v, { toValue: 1, duration: 700, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    Animated.timing(v, { toValue: 1, duration: 450, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [v, delay]);
   return (
     <Animated.View
@@ -57,11 +57,7 @@ export function FadeIn({ children, delay = 0, style }: { children: ReactNode; de
         style,
         {
           opacity: v,
-          transform: [
-            { perspective: 800 },
-            { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) },
-            { rotateX: v.interpolate({ inputRange: [0, 1], outputRange: ['12deg', '0deg'] }) },
-          ],
+          transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
         },
       ]}
     >
@@ -110,7 +106,7 @@ export const Body = ({ style, ...p }: TxtProps) => <Text {...p} style={[styles.b
 export const Dim = ({ style, ...p }: TxtProps) => <Text {...p} style={[styles.body, styles.dim, style]} />;
 export const Eyebrow = ({ style, ...p }: TxtProps) => <Text {...p} style={[styles.eyebrow, style]} />;
 
-/** A dark glass panel with a lit top edge. Pressable panels tilt back in 3D when touched. */
+/** A white card on the warm page. `glow` outlines it in the accent for the moments that matter. */
 export function Card({
   children,
   style,
@@ -123,23 +119,7 @@ export function Card({
   onPress?: () => void;
 }) {
   const press = useRef(new Animated.Value(0)).current;
-  const flat = StyleSheet.flatten(style) ?? {};
-  const outer: ViewStyle = {};
-  const rest: ViewStyle = {};
-  for (const [k, v] of Object.entries(flat)) (k.startsWith('margin') ? outer : rest)[k as keyof ViewStyle] = v as never;
-
-  const panel = (
-    <View style={[styles.cardFrame, glow && styles.cardGlow, outer]}>
-      <LinearGradient colors={gradients.card} start={{ x: 0, y: 0 }} end={{ x: 0.4, y: 1 }} style={StyleSheet.absoluteFill} />
-      <LinearGradient
-        colors={['rgba(255,255,255,0)', glow ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.cardEdge}
-      />
-      <View style={[styles.card, rest]}>{children}</View>
-    </View>
-  );
+  const panel = <View style={[styles.card, glow && styles.cardGlow, style]}>{children}</View>;
   if (!onPress) return panel;
   const to = (v: number) => Animated.spring(press, { toValue: v, useNativeDriver: true, speed: 30, bounciness: 6 }).start();
   return (
@@ -151,22 +131,14 @@ export function Card({
       onPressIn={() => to(1)}
       onPressOut={() => to(0)}
     >
-      <Animated.View
-        style={{
-          transform: [
-            { perspective: 900 },
-            { rotateX: press.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '8deg'] }) },
-            { scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.97] }) },
-          ],
-        }}
-      >
+      <Animated.View style={{ transform: [{ scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.98] }) }] }}>
         {panel}
       </Animated.View>
     </Pressable>
   );
 }
 
-/** A moving highlight that sweeps across gold surfaces. */
+/** A soft highlight that sweeps across the main button now and then. */
 function Sheen() {
   const x = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -193,19 +165,21 @@ function Sheen() {
   );
 }
 
-/** The main action: a polished gold pill. */
+/** The main action: a solid pill, in ink or (for alarms and Go time) the accent. */
 export function InkButton({
   label,
   onPress,
   icon,
   style,
   disabled,
+  tone = 'ink',
 }: {
   label: string;
   onPress: () => void;
   icon?: ReactNode;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  tone?: 'ink' | 'accent';
 }) {
   return (
     <Pressable
@@ -217,7 +191,12 @@ export function InkButton({
       }}
       style={({ pressed }) => [styles.goldWrap, { opacity: disabled ? 0.4 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }, style]}
     >
-      <LinearGradient colors={gradients.ink} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.goldBtn}>
+      <LinearGradient
+        colors={tone === 'accent' ? [colors.accent, '#FF7A52'] : gradients.ink}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.goldBtn}
+      >
         <Sheen />
         {icon}
         <Text style={styles.goldBtnText}>{label}</Text>
@@ -249,8 +228,7 @@ export function GhostButton({
       }}
       style={({ pressed }) => [
         styles.ghostBtn,
-        glassBlur,
-        { borderColor: tone === 'plain' ? colors.hairline : c + '66', transform: [{ scale: pressed ? 0.97 : 1 }] },
+        { borderColor: tone === 'plain' ? colors.hairline : tone === 'danger' ? c + '55' : colors.hairlineStrong, transform: [{ scale: pressed ? 0.97 : 1 }] },
         style,
       ]}
     >
@@ -279,10 +257,10 @@ export function Chip({
         tap();
         onPress?.();
       }}
-      style={[styles.chip, active ? { backgroundColor: color + '22', borderColor: color } : null]}
+      style={[styles.chip, active ? { backgroundColor: color === colors.ink ? colors.ink : color + '22', borderColor: color } : null]}
     >
       {left}
-      <Text style={[styles.chipText, active && { color }]}>{label}</Text>
+      <Text style={[styles.chipText, active && { color: color === colors.ink ? colors.onPaper : colors.text }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -297,7 +275,7 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <View style={[styles.segment, glassBlur]}>
+    <View style={styles.segment}>
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -309,15 +287,9 @@ export function Segmented<T extends string>({
             }}
             style={styles.segmentItem}
           >
-            {active ? (
-              <LinearGradient colors={gradients.ink} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.segmentActive}>
-                <Text style={[styles.segmentText, { color: colors.onPaper }]}>{o.label}</Text>
-              </LinearGradient>
-            ) : (
-              <View style={styles.segmentActive}>
-                <Text style={styles.segmentText}>{o.label}</Text>
-              </View>
-            )}
+            <View style={[styles.segmentActive, active && styles.segmentOn]}>
+              <Text style={[styles.segmentText, active && { color: colors.text }]}>{o.label}</Text>
+            </View>
           </Pressable>
         );
       })}
@@ -329,14 +301,8 @@ export function SectionHeader({ title, right }: { title: string; right?: ReactNo
   return (
     <View style={styles.sectionWrap}>
       <View style={styles.sectionHeader}>
-        <Dingbat />
         <Text style={styles.sectionTitle}>{title}</Text>
-        <LinearGradient
-          colors={['rgba(255,255,255,0.6)', 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.sectionLine}
-        />
+        <View style={{ flex: 1 }} />
         {right}
       </View>
     </View>
@@ -379,9 +345,7 @@ export function ConfirmHost() {
     <Modal visible={!!req} transparent animationType="fade" onRequestClose={close}>
       <Pressable style={[styles.scrim, glassBlur]} onPress={close}>
         <Pressable style={styles.dialog} onPress={() => {}}>
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]} />
           <View style={styles.dialogBody}>
-            <Fleuron style={{ width: 120 }} />
             <Text style={styles.dialogTitle}>{req?.title}</Text>
             <Dim style={{ textAlign: 'center' }}>{req?.message}</Dim>
             <View style={styles.dialogActions}>
@@ -406,12 +370,12 @@ export function ConfirmHost() {
 export function Field({ label, style, ...props }: TextInputProps & { label: string }) {
   return (
     <View style={{ gap: 8 }}>
-      <Eyebrow style={{ fontSize: 10, color: colors.textDim }}>{label}</Eyebrow>
+      <Eyebrow>{label}</Eyebrow>
       <TextInput
         placeholderTextColor={colors.textFaint}
         selectionColor={colors.ink}
         {...props}
-        style={[styles.field, glassBlur, style]}
+        style={[styles.field, style]}
       />
     </View>
   );
@@ -447,11 +411,11 @@ export function InkSwitch({ value, onValueChange }: { value: boolean; onValueCha
         tap();
         onValueChange(v);
       }}
-      trackColor={{ false: 'rgba(255,255,255,0.16)', true: colors.ink }}
-      thumbColor={value ? colors.onPaper : '#8A8A8A'}
+      trackColor={{ false: colors.hairlineStrong, true: colors.success }}
+      thumbColor="#FFFFFF"
       // react-native-web ignores thumbColor for the "on" state.
-      {...({ activeThumbColor: colors.onPaper } as object)}
-      ios_backgroundColor="rgba(255,255,255,0.12)"
+      {...({ activeThumbColor: '#FFFFFF' } as object)}
+      ios_backgroundColor={colors.hairlineStrong}
     />
   );
 }
@@ -459,53 +423,49 @@ export function InkSwitch({ value, onValueChange }: { value: boolean; onValueCha
 export const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  display: { fontFamily: fonts.display, fontSize: 56, lineHeight: 64, color: colors.text, letterSpacing: 1, textTransform: 'uppercase' },
-  sectionTitle: { fontFamily: fonts.display, fontSize: 22, letterSpacing: 1.5, color: colors.text, textTransform: 'uppercase' },
-  title: { fontFamily: fonts.display, fontSize: 24, lineHeight: 30, color: colors.text },
+  display: { fontFamily: fonts.display, fontSize: 36, lineHeight: 42, color: colors.text, letterSpacing: -0.5 },
+  sectionTitle: { fontFamily: fonts.display, fontSize: 19, color: colors.text, letterSpacing: -0.2 },
+  title: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: colors.text },
   body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.text },
   dim: { color: colors.textDim },
   eyebrow: {
     fontFamily: fonts.semibold,
-    fontSize: 10.5,
-    letterSpacing: 3,
+    fontSize: 11,
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: colors.ink,
+    color: colors.textDim,
   },
-  cardFrame: {
+  card: {
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    overflow: 'hidden',
-    backgroundColor: colors.bg,
-    ...glassBlur,
+    backgroundColor: colors.card,
+    padding: space.lg,
+    ...shadow,
   },
-  cardGlow: { borderColor: colors.hairlineStrong, borderWidth: 1.5 },
-  cardEdge: { position: 'absolute', top: 0, left: 24, right: 24, height: 1 },
-  card: { padding: space.lg },
-  goldWrap: { borderRadius: radius.pill },
+  cardGlow: { borderWidth: 2, borderColor: colors.accent },
+  goldWrap: { borderRadius: radius.pill, ...shadow },
   goldBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
-    paddingVertical: 17,
+    paddingVertical: 16,
     paddingHorizontal: space.xl,
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  goldBtnText: { fontFamily: fonts.display, fontSize: 17, letterSpacing: 2, textTransform: 'uppercase', color: colors.onPaper },
+  goldBtnText: { fontFamily: fonts.semibold, fontSize: 16, color: colors.onPaper },
   ghostBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
-    paddingVertical: 15,
+    paddingVertical: 14,
     paddingHorizontal: space.lg,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    backgroundColor: colors.bg,
+    borderWidth: 1.5,
+    backgroundColor: colors.card,
   },
-  ghostBtnText: { fontFamily: fonts.display, fontSize: 16, letterSpacing: 2, textTransform: 'uppercase' },
+  ghostBtnText: { fontFamily: fonts.semibold, fontSize: 15 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -513,45 +473,43 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: radius.pill,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.hairline,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: colors.card,
   },
-  chipText: { fontFamily: fonts.medium, fontSize: 13, color: colors.textDim },
+  chipText: { fontFamily: fonts.medium, fontSize: 14, color: colors.textDim },
   segment: {
     flexDirection: 'row',
     padding: 4,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: colors.bgRaised,
   },
   segmentItem: { flex: 1 },
-  segmentActive: { borderRadius: radius.pill, paddingVertical: 11, alignItems: 'center' },
-  segmentText: { fontFamily: fonts.display, fontSize: 15, letterSpacing: 1.8, textTransform: 'uppercase', color: colors.textDim },
+  segmentActive: { borderRadius: radius.pill, paddingVertical: 10, alignItems: 'center' },
+  segmentOn: { backgroundColor: colors.card, ...shadow },
+  segmentText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.textDim },
   sectionWrap: { marginTop: space.xxl, marginBottom: space.md },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  sectionLine: { flex: 1, height: 1 },
   scrim: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: space.xl },
   dialog: {
     width: '100%',
     maxWidth: 380,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.hairlineStrong,
+    backgroundColor: colors.card,
     overflow: 'hidden',
+    ...shadow,
   },
   dialogBody: { padding: space.xl, alignItems: 'center', gap: space.md },
-  dialogTitle: { fontFamily: fonts.display, fontSize: 30, color: colors.text, textAlign: 'center', textTransform: 'uppercase' },
+  dialogTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text, textAlign: 'center' },
   dialogActions: { flexDirection: 'row', gap: space.md, marginTop: space.sm, alignSelf: 'stretch' },
   field: {
     fontFamily: fonts.body,
     fontSize: 17,
     color: colors.text,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.hairline,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: colors.card,
     paddingHorizontal: space.lg,
     paddingVertical: 14,
   },
