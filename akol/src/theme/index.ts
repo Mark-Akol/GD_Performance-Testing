@@ -6,10 +6,10 @@ import type { JewelKey } from '../lib/types';
 const ACCENTS = {
   babyBlue: { accent: '#8ED1FC', accentStrong: '#52B4F2', accentInk: '#1673B8', accentSoft: '#E6F5FE' },
   royalMint: { accent: '#7EE0BF', accentStrong: '#2EC495', accentInk: '#0B8763', accentSoft: '#E0F8EF' },
-  orange: { accent: '#FFB870', accentStrong: '#FF8A2A', accentInk: '#B85400', accentSoft: '#FFF0E0' },
+  yellow: { accent: '#FFE066', accentStrong: '#F5C400', accentInk: '#7A5E00', accentSoft: '#FFF8D6' },
 } as const;
 export type AccentName = keyof typeof ACCENTS;
-export const ACCENT: AccentName = 'royalMint';
+export const ACCENT = 'royalMint' as AccentName;
 const A = ACCENTS[ACCENT];
 
 /**
@@ -83,7 +83,11 @@ export const jewels: Record<
   JewelKey,
   { name: string; style: SealStyle; hex: string; metal: number; base: string; light: string; deep: string; tint: string }
 > = {
-  sika: { name: 'Sunshine', style: 'solid', hex: '#FFB020', metal: 0, base: '#FFB020', light: '#FFD47A', deep: '#C98400', tint: '#FFF3D9' },
+  // With a yellow accent, the first person's colour moves from sunshine to tangerine.
+  sika:
+    ACCENT === 'yellow'
+      ? { name: 'Tangerine', style: 'solid', hex: '#FF8A3D', metal: 0, base: '#FF8A3D', light: '#FFB988', deep: '#D9661C', tint: '#FFEDE0' }
+      : { name: 'Sunshine', style: 'solid', hex: '#FFB020', metal: 0, base: '#FFB020', light: '#FFD47A', deep: '#C98400', tint: '#FFF3D9' },
   kente: { name: 'Sky', style: 'solid', hex: '#3E8EF7', metal: 0, base: '#3E8EF7', light: '#8DBCFA', deep: '#1F66C4', tint: '#E4EFFE' },
   adire: { name: 'Grape', style: 'solid', hex: '#7C5CFA', metal: 0, base: '#7C5CFA', light: '#B3A0FC', deep: '#5435D6', tint: '#EEE9FE' },
   maasai: { name: 'Berry', style: 'solid', hex: '#E8508F', metal: 0, base: '#E8508F', light: '#F497BD', deep: '#B92E68', tint: '#FCE7F0' },
