@@ -98,7 +98,7 @@ Sync is also a backup: on a new phone, join with the same code and everything co
 1. Create a free project at [supabase.com](https://supabase.com).
 2. Open SQL Editor → New query, paste `supabase/schema.sql`, and run it.
 3. Go to Authentication → Sign In / Providers and turn on **Allow anonymous sign-ins**.
-4. From Project Settings → API, copy the project URL and the `anon` public key into `akol/.env`:
+4. From Project Settings → API, copy the project URL and the `anon` public key into `akol/.env.local` (git ignores it):
    ```
    EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
