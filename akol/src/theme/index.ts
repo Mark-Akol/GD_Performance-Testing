@@ -6,6 +6,7 @@ import type { JewelKey } from '../lib/types';
 const ACCENTS = {
   babyBlue: { accent: '#8ED1FC', accentStrong: '#52B4F2', accentInk: '#1673B8', accentSoft: '#E6F5FE' },
   royalMint: { accent: '#7EE0BF', accentStrong: '#2EC495', accentInk: '#0B8763', accentSoft: '#E0F8EF' },
+  orange: { accent: '#FFB870', accentStrong: '#FF8A2A', accentInk: '#B85400', accentSoft: '#FFF0E0' },
 } as const;
 export type AccentName = keyof typeof ACCENTS;
 export const ACCENT: AccentName = 'royalMint';
@@ -87,7 +88,11 @@ export const jewels: Record<
   adire: { name: 'Grape', style: 'solid', hex: '#7C5CFA', metal: 0, base: '#7C5CFA', light: '#B3A0FC', deep: '#5435D6', tint: '#EEE9FE' },
   maasai: { name: 'Berry', style: 'solid', hex: '#E8508F', metal: 0, base: '#E8508F', light: '#F497BD', deep: '#B92E68', tint: '#FCE7F0' },
   terracotta: { name: 'Lagoon', style: 'solid', hex: '#14B8A6', metal: 0, base: '#14B8A6', light: '#6FD9CC', deep: '#0C8A7C', tint: '#DEF6F3' },
-  malachite: { name: 'Tangerine', style: 'solid', hex: '#FF8A3D', metal: 0, base: '#FF8A3D', light: '#FFB988', deep: '#D9661C', tint: '#FFEDE0' },
+  // The sixth colour steps aside from whichever accent is in use.
+  malachite:
+    ACCENT === 'royalMint'
+      ? { name: 'Tangerine', style: 'solid', hex: '#FF8A3D', metal: 0, base: '#FF8A3D', light: '#FFB988', deep: '#D9661C', tint: '#FFEDE0' }
+      : { name: 'Mint', style: 'solid', hex: '#2FB36D', metal: 0, base: '#2FB36D', light: '#7FD3A5', deep: '#1E8650', tint: '#E1F5EA' },
 };
 
 export const JEWEL_KEYS = Object.keys(jewels) as JewelKey[];
