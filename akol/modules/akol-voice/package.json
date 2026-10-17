@@ -1,0 +1,6 @@
+{
+  "name": "akol-voice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android notification channels that play a recorded voice"
+}

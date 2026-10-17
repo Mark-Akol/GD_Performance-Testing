@@ -22,12 +22,13 @@ const USED = [
   /PermanentMarker_400Regular\.[a-f0-9]+\.ttf$/,
   /ArchivoNarrow_(400Regular|500Medium|600SemiBold|700Bold)\.[a-f0-9]+\.ttf$/,
   /\.png$/,
+  /akol_time_to_go\.[a-f0-9]+\.wav$/,
 ];
-const MIME = { '.ttf': 'font/ttf', '.png': 'image/png' };
+const MIME = { '.ttf': 'font/ttf', '.png': 'image/png', '.wav': 'audio/wav' };
 
 let embedded = 0;
 let bytes = 0;
-bundle = bundle.replace(/"(\/assets\/[^"]+\.(?:ttf|png))"/g, (whole, url) => {
+bundle = bundle.replace(/"(\/assets\/[^"]+\.(?:ttf|png|wav))"/g, (whole, url) => {
   const file = join(dist, url);
   if (!USED.some((re) => re.test(url)) || !existsSync(file)) return whole;
   const data = readFileSync(file);

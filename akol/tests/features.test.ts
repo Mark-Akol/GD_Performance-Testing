@@ -4,11 +4,13 @@ import { describe, it } from 'node:test';
 
 import {
   ALARM_REPEATS,
+  FAMILY_ID,
   ONE_OFF_ROUTINE_ID,
   dayKey,
   planReminders,
   pruneOneOffs,
   tasksForDay,
+  voiceFor,
 } from '../src/lib/schedule.ts';
 import { exampleFamily } from '../src/lib/seed.ts';
 import {
@@ -133,5 +135,40 @@ describe('family codes', () => {
     assert.equal(normaliseFamilyCode('akol-ab3 xyz'), 'AB3XYZ');
     assert.equal(normaliseFamilyCode('AKOLAB3XYZ'), 'AB3XYZ');
     assert.equal(normaliseFamilyCode('ab3xyz99'), 'AB3XYZ');
+  });
+});
+
+describe('voice alarms', () => {
+  const base = exampleFamily();
+  const alarmed: AkolState = {
+    ...base,
+    tasks: base.tasks.map((t) => (t.id === 't_ra_lunch' ? { ...t, alert: 'alarm' } : t)),
+  };
+  const rings = (s: AkolState) =>
+    planReminders(s, at(6, 0)).filter((p) => p.task.id === 't_ra_lunch' && p.day === dayKey(at(6, 0)));
+  const clip = { sound: 'akol_voice_mra_1.wav', uri: 'file:///voice.wav', recordedAt: 1 };
+
+  it('ring first, then play a voice on the repeats', () => {
+    assert.deepEqual(
+      rings(alarmed).map((r) => voiceFor(alarmed, r)),
+      [null, 'default', 'default', 'default'],
+    );
+  });
+  it('use the recording made for that person', () => {
+    const s = { ...alarmed, settings: { ...alarmed.settings, voices: { m_ra: clip } } };
+    assert.deepEqual(voiceFor(s, rings(s)[1]), clip);
+  });
+  it('can be switched off', () => {
+    const s = { ...alarmed, settings: { ...alarmed.settings, voiceAlarms: false } };
+    assert.ok(rings(s).every((r) => voiceFor(s, r) === null));
+  });
+  it('Go time repeats in the family voice', () => {
+    const s = { ...base, settings: { ...base.settings, voices: { [FAMILY_ID]: clip } } };
+    const go = planReminders(s, at(6, 0)).filter((p) => p.task.id === 't_go' && p.day === dayKey(at(6, 0)));
+    assert.equal(go.length, 4);
+    assert.deepEqual(voiceFor(s, go[2]), clip);
+  });
+  it('plain notifications never use a voice', () => {
+    assert.ok(planReminders(base, at(6, 0)).filter((p) => p.task.alert !== 'alarm').every((r) => voiceFor(base, r) === null));
   });
 });

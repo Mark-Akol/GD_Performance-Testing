@@ -6,6 +6,7 @@ import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { Avatar } from '../../components/Avatar';
 import { BackupCard, FamilySyncCard } from '../../components/SettingsCards';
+import { VoiceAlarmsCard } from '../../components/VoiceAlarms';
 import {
   Card,
   Chip,
@@ -134,6 +135,12 @@ export default function Settings() {
               value={settings.alarmRepeats ?? true}
               onChange={(alarmRepeats) => dispatch({ type: 'settings', patch: { alarmRepeats } })}
             />
+            <ToggleRow
+              label="Voice on repeat rings"
+              hint="Repeats play a voice: yours if you’ve recorded one, otherwise Akol’s."
+              value={settings.voiceAlarms ?? true}
+              onChange={(voiceAlarms) => dispatch({ type: 'settings', patch: { voiceAlarms } })}
+            />
             <Eyebrow style={{ color: colors.textDim, fontSize: 10, marginTop: space.md, marginBottom: space.sm }}>
               Remind this device about
             </Eyebrow>
@@ -162,6 +169,9 @@ export default function Settings() {
           </>
         )}
       </Card>
+
+      <SectionHeader title="Voice alarms" />
+      <VoiceAlarmsCard />
 
       <SectionHeader title="Showing Akol to someone" />
       <Card>

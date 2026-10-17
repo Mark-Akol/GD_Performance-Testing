@@ -48,10 +48,19 @@
       [
         "expo-notifications",
         {
-          "color": "#E8C78A"
+          "color": "#E8C78A",
+          "sounds": [
+            "./assets/sounds/akol_time_to_go.wav"
+          ]
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Akol records your voice for voice alarms, like “Hey Ra, it’s time to go.”"
+        }
+      ]
     ]
   }
 }

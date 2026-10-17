@@ -250,8 +250,8 @@ export default function TaskEditor() {
       </View>
       {alertChoice === 'alarm' && (
         <Dim style={styles.alarmHint}>
-          Rings louder, breaks through Focus and Do Not Disturb, and rings again every 3 minutes (3 times) until it’s ticked
-          off.
+          Rings louder and breaks through Focus and Do Not Disturb. If it isn’t ticked, it rings again every 3 minutes (3
+          times) with a voice: “Hey, it’s time to go!” Record your own in Settings → Voice alarms.
         </Dim>
       )}
 

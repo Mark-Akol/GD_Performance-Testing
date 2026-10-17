@@ -56,6 +56,17 @@ export interface Task {
 /** completions[day][taskId] = epoch ms when it was checked off. */
 export type Completions = Record<DayKey, Record<string, number>>;
 
+/** A recorded voice prompt, played as an alarm's sound. */
+export interface VoiceClip {
+  /** iOS: the file's name in Library/Sounds, which is how a notification names its sound. */
+  sound: string;
+  /** The file itself, for playing it back in the app. */
+  uri: string;
+  /** Android: the notification channel that plays this recording, if one could be made. */
+  channelId?: string;
+  recordedAt: number;
+}
+
 export interface Settings {
   /** The member who uses this device ("me"). */
   meId: string | null;
@@ -67,6 +78,13 @@ export interface Settings {
   onboarded: boolean;
   /** Alarm-style tasks ring again every few minutes until ticked off. Defaults to true. */
   alarmRepeats?: boolean;
+  /** Repeat rings play a voice ("Hey Ra, it's time to go") instead of the alarm sound. Defaults to true. */
+  voiceAlarms?: boolean;
+  /**
+   * Voices recorded on this phone, keyed by member id (or FAMILY_ID for whole-family items).
+   * Recordings are files on this phone, so they are not synced or backed up.
+   */
+  voices?: Record<string, VoiceClip>;
   /** This phone's link to a family sync group, if it has joined one. */
   sync?: { householdId: string; code: string } | null;
   /**

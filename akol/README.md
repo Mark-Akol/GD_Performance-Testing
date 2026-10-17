@@ -13,6 +13,9 @@ shows everyone's open items.
 - **Alarm mode**: any item can be set to *Notification* or *Alarm*. An alarm rings on Android's alarm channel and is
   time-sensitive on iOS, so it breaks through Focus and Do Not Disturb. It rings again every 3 minutes, up to 3 more
   times, until someone ticks it.
+- **Voice alarms**: the repeat rings play a voice. A parent records *"Hey Ra, it's time to go!"* for each person and
+  one for the whole family (Settings → Voice alarms). Without a recording, Akol's own voice plays. Go time in the
+  example family is set to Alarm.
 - **One-off tasks**: *+ One-off task* on Today, or Routines → *Add a one-off task*. Pick Today, Tomorrow or any date.
   One-offs show only on that day and tidy themselves away two weeks later.
 - **Family sync (optional)**: one phone taps *Start family sync* and gets a code such as `AKOL-K7P2QX`. Other phones
@@ -70,6 +73,9 @@ src/
     syncLogic.ts       pure merge, backup and family-code helpers (unit-tested)
     sync.ts            Supabase client: start, join, push, listen
     FamilySync.tsx     keeps this phone and the family in step
+    voice.ts           saves recorded voices where notifications can play them
+modules/akol-voice/    small Android module: a notification channel per recorded voice
+assets/sounds/         Akol's built-in voice (placeholder, see below)
 supabase/schema.sql    tables, row-level security and RPCs for family sync
     seed.ts            the "Mark & Ra school morning" example family
   theme/               palette, jewels and typography
@@ -83,6 +89,19 @@ iOS allows only 64 pending local notifications per app. Akol doesn't use repeati
 changes and whenever the app comes to the foreground. This also means ticking an item cancels its reminder
 ("smart skip"), and the text of a checkpoint reminder, such as "3 items still open", stays accurate. On Android 12+,
 `SCHEDULE_EXACT_ALARM` lets reminders fire on the exact minute.
+
+### How voice alarms work
+
+iOS plays a notification sound by file name from the app's `Library/Sounds` folder. Recordings are saved there as
+`.wav` files of up to 10 seconds; iOS ignores sounds longer than 30 seconds. On Android a sound belongs to a
+notification channel and is fixed when the channel is made. `modules/akol-voice` copies each recording to the shared
+Notifications folder and makes a channel for it. That module needs Android 10 or later and a development or store
+build. In Expo Go, and on older Android versions, the repeats play Akol's built-in voice instead. Recordings stay on
+the phone that made them, so they aren't synced or included in text backups.
+
+**Replace the placeholder voice before launch.** `assets/sounds/akol_time_to_go.wav` was made with an open-source
+text-to-speech voice whose licence for commercial use is unclear. Record the brand voice yourself, or hire a voice
+actor, and save it under the same name: 16-bit `.wav`, mono, under 30 seconds.
 
 ### How family sync works
 
@@ -142,6 +161,7 @@ reminders". Apple and Google both need a privacy policy URL. Since there is no d
 
 ## Roadmap ideas
 
+- **Akol calls you**: a real phone call (Twilio) when an alarm is still not done. Press 1 to tick it. A paid feature.
 - True full-screen alarms on iOS through AlarmKit (iOS 26), or Critical Alerts (this needs Apple's approval).
 - A kid mode with big buttons and rewards/stickers for streaks.
 - Home-screen and lock-screen widgets (iOS WidgetKit / Android Glance via a config plugin).

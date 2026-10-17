@@ -1,12 +1,15 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-import { checkpointSummary, formatTime, planReminders } from './schedule';
-import type { AkolState, DayKey } from './types';
+import { checkpointSummary, formatTime, planReminders, voiceFor } from './schedule';
+import type { AkolState, DayKey, VoiceClip } from './types';
+import { DEFAULT_VOICE_SOUND } from './voice';
 
 export const CHANNEL_ID = 'akol-reminders';
 /** Android channel for alarm-style tasks: alarm sound, long buzz, rings through Do Not Disturb. */
 export const ALARM_CHANNEL_ID = 'akol-alarms';
+/** Android channel for an alarm's voice rings in Akol's own voice. Recorded voices get their own channels. */
+export const VOICE_CHANNEL_ID = 'akol-voice-default';
 export const TASK_CATEGORY = 'akol-task';
 export const ACTION_DONE = 'akol-done';
 
@@ -48,6 +51,17 @@ export async function configureNotifications(): Promise<void> {
       bypassDnd: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       vibrationPattern: [0, 600, 300, 600, 300, 600, 300, 600],
+      audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM },
+      lightColor: '#FFFFFF',
+    });
+    await Notifications.setNotificationChannelAsync(VOICE_CHANNEL_ID, {
+      name: 'Voice alarms (Akol voice)',
+      description: '“Hey! It’s time to go.” Plays when an alarm task still isn’t done.',
+      importance: Notifications.AndroidImportance.MAX,
+      bypassDnd: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      sound: DEFAULT_VOICE_SOUND,
+      vibrationPattern: [0, 600, 300, 600, 300, 600],
       audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM },
       lightColor: '#FFFFFF',
     });
@@ -95,13 +109,14 @@ async function doSync(state: AkolState): Promise<void> {
   const now = new Date();
   const names = new Map(state.members.map((m) => [m.id, m.name]));
 
-  for (const { task, at, day, repeat } of planReminders(state, now)) {
+  for (const reminder of planReminders(state, now)) {
+    const { task, at, day, repeat } = reminder;
     let title: string;
     let body: string;
     if (task.checkpoint) {
       const summary = checkpointSummary(task, state, state.completions, day);
       const open = summary.outstanding.length;
-      title = `${task.title} · ${formatTime(task.time)}`;
+      title = repeat > 0 ? `⏰ ${task.title}! Still waiting` : `${task.title} · ${formatTime(task.time)}`;
       body =
         open === 0
           ? 'Everything is checked off. Off you go ✨'
@@ -116,13 +131,22 @@ async function doSync(state: AkolState): Promise<void> {
       }
     }
     const alarm = task.alert === 'alarm';
+    const voice = voiceFor(state, reminder);
+    if (voice) title = title.replace('⏰', '🔊');
+    // iOS names the sound file; Android plays whatever its channel's sound is.
+    const sound = voice === 'default' ? DEFAULT_VOICE_SOUND : voice ? voice.sound : 'default';
+    const channelId = voice
+      ? (voice !== 'default' && voice.channelId) || VOICE_CHANNEL_ID
+      : alarm
+        ? ALARM_CHANNEL_ID
+        : CHANNEL_ID;
     const data: ReminderData = { taskId: task.id, day, checkpoint: !!task.checkpoint };
     await Notifications.scheduleNotificationAsync({
       content: {
         title,
         body,
         data: data as unknown as Record<string, unknown>,
-        sound: 'default',
+        sound,
         categoryIdentifier: task.checkpoint ? undefined : TASK_CATEGORY,
         // iOS: time-sensitive alerts break through Focus modes and stay on the lock screen.
         interruptionLevel: alarm || task.checkpoint ? 'timeSensitive' : 'active',
@@ -130,7 +154,7 @@ async function doSync(state: AkolState): Promise<void> {
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: at,
-        channelId: alarm ? ALARM_CHANNEL_ID : CHANNEL_ID,
+        channelId,
       },
     });
   }
@@ -142,6 +166,26 @@ export async function sendTestReminder(): Promise<boolean> {
   await Notifications.scheduleNotificationAsync({
     content: { title: 'Akol', body: 'This is how your reminders will look. ✨', sound: 'default' },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 3, channelId: CHANNEL_ID },
+  });
+  return true;
+}
+
+/** Ring a voice alarm in 5 seconds, so a parent can hear it as the family will (lock the phone to try it). */
+export async function sendTestVoiceAlarm(voice: VoiceClip | 'default', name: string): Promise<boolean> {
+  if (!supported) return false;
+  if (!(await requestNotificationPermission())) return false;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: `🔊 ${name}: test voice alarm`,
+      body: 'This is how an alarm’s repeat rings will sound.',
+      sound: voice === 'default' ? DEFAULT_VOICE_SOUND : voice.sound,
+      interruptionLevel: 'timeSensitive',
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 5,
+      channelId: (voice !== 'default' && voice.channelId) || VOICE_CHANNEL_ID,
+    },
   });
   return true;
 }

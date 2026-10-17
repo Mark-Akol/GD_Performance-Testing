@@ -57,6 +57,7 @@ export function exampleFamily(parentName = 'Mark'): AkolState {
     // Family checkpoint
     t('t_go', 'r_school', FAMILY_ID, '07:30', 'Go time', {
       checkpoint: true,
+      alert: 'alarm',
       note: 'Have you completed the checklist?',
     }),
     // Weekend

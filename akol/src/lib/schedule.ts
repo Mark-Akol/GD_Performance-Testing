@@ -1,5 +1,5 @@
 // Pure scheduling logic. No React / React Native imports so it can be unit-tested with plain Node.
-import type { AkolState, ClockTime, Completions, DayKey, Task, Weekday } from './types.ts';
+import type { AkolState, ClockTime, Completions, DayKey, Task, VoiceClip, Weekday } from './types.ts';
 
 export const FAMILY_ID = 'family';
 
@@ -219,7 +219,7 @@ export function planReminders(
     for (const task of tasksForDay(state, date)) {
       if (task.remind === false || !wanted(task.memberId)) continue;
       if (smartSkip && isDone(state.completions, day, task.id)) continue;
-      const repeats = task.alert === 'alarm' && alarmRepeats && !task.checkpoint ? ALARM_REPEATS : 0;
+      const repeats = task.alert === 'alarm' && alarmRepeats ? ALARM_REPEATS : 0;
       for (let r = 0; r <= repeats; r++) {
         const at = new Date(atTime(date, task.time).getTime() + r * ALARM_REPEAT_MIN * 60000);
         if (at.getTime() <= now.getTime()) continue;
@@ -228,6 +228,15 @@ export function planReminders(
     }
   }
   return out.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, limit);
+}
+
+/**
+ * The voice an alarm's repeat ring plays: the recording made for that person (or for the whole
+ * family), or Akol's built-in voice. Null when the ring isn't a voice ring.
+ */
+export function voiceFor(state: AkolState, reminder: PlannedReminder): VoiceClip | 'default' | null {
+  if (reminder.repeat === 0 || reminder.task.alert !== 'alarm' || state.settings.voiceAlarms === false) return null;
+  return state.settings.voices?.[reminder.task.memberId] ?? 'default';
 }
 
 /** Drop one-off tasks whose date is more than `keepDays` in the past. */
