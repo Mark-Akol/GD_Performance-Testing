@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
+import { Lockup } from '../components/Lockup';
 import { Fleuron } from '../components/Rules';
 import { Card, FadeIn, Field, GhostButton, InkButton, Screen } from '../components/ui';
 import { requestNotificationPermission } from '../lib/notifications';
@@ -38,11 +39,11 @@ export default function Welcome() {
       <FadeIn>
         <View style={styles.coverTop}>
           <Text style={styles.small}>Vol. 1</Text>
-          <Text style={styles.small}>The family, on time</Text>
+          <Text style={styles.small}>For you & the family</Text>
         </View>
-        <Image source={require('../../assets/icon.png')} style={styles.mark} accessibilityIgnoresInvertColors />
-        <Text style={styles.word}>AKOL</Text>
-        <Text style={styles.tag}>the family, on time</Text>
+        <View style={styles.lockup}>
+          <Lockup size={72} />
+        </View>
       </FadeIn>
 
       <FadeIn delay={300}>
@@ -80,26 +81,9 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  mark: { width: 76, height: 76, borderRadius: 18, borderWidth: 1, borderColor: colors.hairline, marginTop: space.lg },
+  lockup: { marginTop: space.xl, marginBottom: space.sm },
   coverTop: { flexDirection: 'row', justifyContent: 'space-between' },
   small: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.text },
-  word: {
-    fontFamily: fonts.display,
-    fontSize: 150,
-    lineHeight: 168,
-    letterSpacing: 2,
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: space.md,
-  },
-  tag: {
-    fontFamily: fonts.italic,
-    fontSize: 26,
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: -18,
-    transform: [{ rotate: '-4deg' }],
-  },
   lede: {
     fontFamily: fonts.display,
     fontSize: 30,

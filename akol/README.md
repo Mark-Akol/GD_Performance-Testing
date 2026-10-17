@@ -156,6 +156,8 @@ Rough costs: Apple Developer Program **$99/year**, paid yearly only (there is no
 allowance of cloud builds, which is enough for a solo founder. Supabase's free tier covers family sync. You can
 host the web build (`npx expo export -p web`) for free on EAS Hosting, Netlify or Vercel.
 
+Store copy, privacy answers and screenshot captions are in `docs/store-listing.md`; the privacy policy is `docs/privacy-policy.md` (fill in the contact details and host it, e.g. free on GitHub Pages).
+
 Store notes: Google Play asks you to declare why the app needs exact alarms. The declaration is "user-set timed
 reminders". Apple and Google both need a privacy policy URL. Since there is no data collection it can be short.
 

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Lockup } from '../../components/Lockup';
 import { Avatar } from '../../components/Avatar';
 import { Timeline } from '../../components/Checklist';
 import { Card, Dim, FadeIn, GhostButton, InkButton, Screen, SectionHeader, Segmented } from '../../components/ui';
@@ -59,8 +60,7 @@ export default function Today() {
         <View style={styles.top}>
           <View style={{ flex: 1 }}>
             <View style={styles.brandRow}>
-              <Text style={styles.brand}>AKOL</Text>
-              <Text style={styles.tag}>est. 2026</Text>
+              <Lockup size={36} tagline={false} />
             </View>
             <Text style={styles.date}>{dateLine}</Text>
             {state.settings.demoClock && (
@@ -172,9 +172,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  brand: { fontFamily: fonts.display, fontSize: 30, letterSpacing: 2, color: colors.text },
-  tag: { fontFamily: fonts.italic, fontSize: 15, color: colors.text, transform: [{ rotate: '-6deg' }], marginTop: 4 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.sm },
   date: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2.6, textTransform: 'uppercase', color: colors.textDim },
   demo: {
     alignSelf: 'flex-start',
