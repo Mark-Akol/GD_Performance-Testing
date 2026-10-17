@@ -14,8 +14,9 @@ import { AppState } from 'react-native';
 
 import { syncReminders } from './notifications';
 import { JEWEL_KEYS, LEGACY_JEWELS } from '../theme';
-import { FAMILY_ID, atTime, dayKey, pruneCompletions } from './schedule';
+import { FAMILY_ID, atTime, dayKey, pruneCompletions, pruneOneOffs } from './schedule';
 import { emptyState } from './seed';
+import { applyTicks, type BackupData, type PlanDoc, type Tick } from './syncLogic';
 import type { AkolState, DayKey, Member, Routine, Settings, Task } from './types';
 
 const STORAGE_KEY = 'akol:state:v1';
@@ -30,7 +31,29 @@ type Action =
   | { type: 'removeRoutine'; id: string }
   | { type: 'upsertTask'; task: Task }
   | { type: 'removeTask'; id: string }
-  | { type: 'settings'; patch: Partial<Settings> };
+  | { type: 'settings'; patch: Partial<Settings> }
+  /** Changes made on another family phone. `force` takes the family's plan over this phone's. */
+  | { type: 'applyRemote'; plan?: PlanDoc; ticks?: Tick[]; force?: boolean }
+  | { type: 'restore'; data: BackupData };
+
+export type { Action };
+
+/** Actions that change the shared plan (family, routines, tasks) rather than ticks or settings. */
+const PLAN_ACTIONS = new Set<Action['type']>([
+  'upsertMember',
+  'removeMember',
+  'upsertRoutine',
+  'removeRoutine',
+  'upsertTask',
+  'removeTask',
+]);
+
+/** Keep "who am I" pointing at someone who exists after the family list changes. */
+function withValidMe(state: AkolState): AkolState {
+  const { meId } = state.settings;
+  if (!meId || state.members.some((m) => m.id === meId)) return state;
+  return { ...state, settings: { ...state.settings, meId: state.members[0]?.id ?? null } };
+}
 
 function upsert<T extends { id: string }>(list: T[], item: T): T[] {
   const i = list.findIndex((x) => x.id === item.id);
@@ -41,7 +64,25 @@ function upsert<T extends { id: string }>(list: T[], item: T): T[] {
 }
 
 export function reducer(state: AkolState, action: Action): AkolState {
+  const next = baseReducer(state, action);
+  // Stamp plan edits so the newest plan wins when phones sync.
+  if (PLAN_ACTIONS.has(action.type) && next !== state) return { ...next, planUpdatedAt: Date.now() };
+  return next;
+}
+
+function baseReducer(state: AkolState, action: Action): AkolState {
   switch (action.type) {
+    case 'applyRemote': {
+      let next = state;
+      if (action.plan && (action.force || action.plan.updatedAt > (state.planUpdatedAt ?? 0))) {
+        const { members, routines, tasks, updatedAt } = action.plan;
+        next = withValidMe({ ...next, members, routines, tasks, planUpdatedAt: updatedAt });
+      }
+      if (action.ticks?.length) next = { ...next, completions: applyTicks(next.completions, action.ticks) };
+      return next;
+    }
+    case 'restore':
+      return withValidMe({ ...state, ...action.data, planUpdatedAt: Date.now() });
     case 'replace':
       return action.state;
     case 'toggle': {
@@ -110,6 +151,7 @@ function migrate(raw: unknown): AkolState {
     tasks: Array.isArray(s.tasks) ? s.tasks : [],
     completions: s.completions && typeof s.completions === 'object' ? s.completions : {},
     settings: { ...base.settings, ...(s.settings ?? {}) },
+    planUpdatedAt: typeof s.planUpdatedAt === 'number' ? s.planUpdatedAt : 0,
   };
 }
 
@@ -136,6 +178,7 @@ export function AkolProvider({ children }: { children: ReactNode }) {
         if (json) {
           const loaded = migrate(JSON.parse(json));
           loaded.completions = pruneCompletions(loaded.completions, new Date());
+          loaded.tasks = pruneOneOffs(loaded.tasks, new Date());
           dispatch({ type: 'replace', state: loaded });
         }
       })

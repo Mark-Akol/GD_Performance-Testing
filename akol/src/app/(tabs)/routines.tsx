@@ -1,16 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../../components/Avatar';
-import { Card, Dim, Display, Eyebrow, InkButton, InkSwitch, Screen, SectionHeader } from '../../components/ui';
-import { describeDays, formatTime, sortByTime } from '../../lib/schedule';
+import { Card, Dim, Display, Eyebrow, GhostButton, InkButton, InkSwitch, Screen, SectionHeader } from '../../components/ui';
+import { ONE_OFF_ROUTINE_ID, addDays, dayKey, describeDays, formatTime, sortByTime } from '../../lib/schedule';
 import { uid } from '../../lib/seed';
-import { useAkol } from '../../lib/store';
+import { useAkol, useNow } from '../../lib/store';
 import { colors, fonts, space } from '../../theme';
 
 export default function Routines() {
   const { state, dispatch, member } = useAkol();
+  const now = useNow();
+  const today = dayKey(now);
+  const regular = state.routines.filter((r) => r.id !== ONE_OFF_ROUTINE_ID);
+  const upcoming = sortByTime(state.tasks.filter((t) => t.date && t.date >= today)).sort((a, b) =>
+    (a.date ?? '').localeCompare(b.date ?? ''),
+  );
+  const whenLabel = (k: string) => {
+    if (k === today) return 'Today';
+    if (k === dayKey(addDays(now, 1))) return 'Tomorrow';
+    const [y, m, d] = k.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
 
   const create = () => {
     const id = uid('r_');
@@ -27,9 +39,9 @@ export default function Routines() {
         everything is done.
       </Dim>
 
-      <SectionHeader title={`${state.routines.length} routine${state.routines.length === 1 ? '' : 's'}`} />
+      <SectionHeader title={`${regular.length} routine${regular.length === 1 ? '' : 's'}`} />
       <View style={{ gap: space.md }}>
-        {state.routines.map((r) => {
+        {regular.map((r) => {
           const tasks = sortByTime(state.tasks.filter((t) => t.routineId === r.id));
           const people = [...new Set(tasks.map((t) => t.memberId))];
           const first = tasks[0];
@@ -73,9 +85,36 @@ export default function Routines() {
 
       <InkButton
         label="Create a routine"
-        icon={<Ionicons name="add" size={18} color={colors.bg} />}
+        icon={<Ionicons name="add" size={18} color={colors.onPaper} />}
         onPress={create}
         style={{ marginTop: space.xl }}
+      />
+
+      <SectionHeader title="One-off tasks" />
+      {upcoming.length === 0 ? (
+        <Dim>Nothing booked. Add a one-off for something that only happens once, like a dentist visit.</Dim>
+      ) : (
+        <Card style={{ padding: 0 }}>
+          {upcoming.map((t, i) => (
+            <Pressable
+              key={t.id}
+              onPress={() => router.push({ pathname: '/task', params: { id: t.id } })}
+              style={[styles.oneOff, i > 0 && styles.oneOffBorder]}
+            >
+              <Text style={styles.oneOffWhen}>{whenLabel(t.date!)}</Text>
+              <Text style={styles.oneOffTime}>{formatTime(t.time)}</Text>
+              <Text style={styles.oneOffTitle} numberOfLines={1}>
+                {t.title}
+              </Text>
+              <Text style={styles.oneOffWho}>{member(t.memberId)?.name ?? 'Everyone'}</Text>
+            </Pressable>
+          ))}
+        </Card>
+      )}
+      <GhostButton
+        label="+ Add a one-off task"
+        onPress={() => router.push({ pathname: '/task', params: { oneOff: '1' } })}
+        style={{ marginTop: space.lg }}
       />
     </Screen>
   );
@@ -89,4 +128,10 @@ const styles = StyleSheet.create({
   avatars: { flexDirection: 'row' },
   span: { flex: 1, fontFamily: fonts.medium, fontSize: 13, color: colors.textDim },
   cp: { fontFamily: fonts.medium, fontSize: 12, color: colors.inkSoft, marginTop: space.md },
+  oneOff: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 14, paddingHorizontal: space.lg },
+  oneOffBorder: { borderTopWidth: 1, borderTopColor: colors.hairline },
+  oneOffWhen: { fontFamily: fonts.display, fontSize: 15, letterSpacing: 1, color: colors.text, textTransform: 'uppercase', width: 86 },
+  oneOffTime: { fontFamily: fonts.semibold, fontSize: 13, color: colors.textDim, width: 62 },
+  oneOffTitle: { flex: 1, fontFamily: fonts.medium, fontSize: 15, color: colors.text },
+  oneOffWho: { fontFamily: fonts.italic, fontSize: 13, color: colors.textDim },
 });

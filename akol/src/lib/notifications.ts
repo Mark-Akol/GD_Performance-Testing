@@ -5,6 +5,8 @@ import { checkpointSummary, formatTime, planReminders } from './schedule';
 import type { AkolState, DayKey } from './types';
 
 export const CHANNEL_ID = 'akol-reminders';
+/** Android channel for alarm-style tasks: alarm sound, long buzz, rings through Do Not Disturb. */
+export const ALARM_CHANNEL_ID = 'akol-alarms';
 export const TASK_CATEGORY = 'akol-task';
 export const ACTION_DONE = 'akol-done';
 
@@ -37,7 +39,17 @@ export async function configureNotifications(): Promise<void> {
       name: 'Routine reminders',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 180, 120, 180],
-      lightColor: '#E9C46A',
+      lightColor: '#FFFFFF',
+    });
+    await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
+      name: 'Alarms (must-do tasks)',
+      description: 'Rings like an alarm and repeats until the task is ticked off.',
+      importance: Notifications.AndroidImportance.MAX,
+      bypassDnd: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      vibrationPattern: [0, 600, 300, 600, 300, 600, 300, 600],
+      audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM },
+      lightColor: '#FFFFFF',
     });
   }
 
@@ -83,7 +95,7 @@ async function doSync(state: AkolState): Promise<void> {
   const now = new Date();
   const names = new Map(state.members.map((m) => [m.id, m.name]));
 
-  for (const { task, at, day } of planReminders(state, now)) {
+  for (const { task, at, day, repeat } of planReminders(state, now)) {
     let title: string;
     let body: string;
     if (task.checkpoint) {
@@ -97,8 +109,13 @@ async function doSync(state: AkolState): Promise<void> {
     } else {
       const who = names.get(task.memberId);
       title = who ? `${who} · ${task.title}` : task.title;
-      body = task.note ? `${formatTime(task.time)} — ${task.note}` : `It's ${formatTime(task.time)}. Tap to check it off.`;
+      body = task.note ? `${formatTime(task.time)} — ${task.note}` : `It's ${formatTime(task.time)} — tap to check it off.`;
+      if (repeat > 0) {
+        title = `⏰ Still not done: ${title}`;
+        body = `Due at ${formatTime(task.time)} — mark it done to stop the alarm.`;
+      }
     }
+    const alarm = task.alert === 'alarm';
     const data: ReminderData = { taskId: task.id, day, checkpoint: !!task.checkpoint };
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -107,8 +124,14 @@ async function doSync(state: AkolState): Promise<void> {
         data: data as unknown as Record<string, unknown>,
         sound: 'default',
         categoryIdentifier: task.checkpoint ? undefined : TASK_CATEGORY,
+        // iOS: time-sensitive alerts break through Focus modes and stay on the lock screen.
+        interruptionLevel: alarm || task.checkpoint ? 'timeSensitive' : 'active',
       },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL_ID },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: at,
+        channelId: alarm ? ALARM_CHANNEL_ID : CHANNEL_ID,
+      },
     });
   }
 }

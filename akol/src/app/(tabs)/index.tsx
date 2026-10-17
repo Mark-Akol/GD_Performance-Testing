@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../../components/Avatar';
 import { Timeline } from '../../components/Checklist';
-import { Card, Dim, FadeIn, InkButton, Screen, SectionHeader, Segmented } from '../../components/ui';
+import { Card, Dim, FadeIn, GhostButton, InkButton, Screen, SectionHeader, Segmented } from '../../components/ui';
 import {
   FAMILY_ID,
   atTime,
@@ -124,6 +124,11 @@ export default function Today() {
             { value: 'mine', label: 'My tracks' },
             { value: 'family', label: 'Whole crew' },
           ]}
+        />
+        <GhostButton
+          label="+ One-off task"
+          onPress={() => router.push({ pathname: '/task', params: { oneOff: '1' } })}
+          style={{ marginTop: space.md }}
         />
       </FadeIn>
 

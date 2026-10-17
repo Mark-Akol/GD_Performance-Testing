@@ -44,6 +44,13 @@ export interface Task {
   checkpoint?: boolean;
   /** Send a push reminder at `time`. Defaults to true. */
   remind?: boolean;
+  /**
+   * 'alarm' rings louder (alarm sound on Android, time-sensitive on iOS so it breaks through
+   * Focus) and rings again every few minutes until it is ticked off. Defaults to 'notify'.
+   */
+  alert?: 'notify' | 'alarm';
+  /** A one-off task happens only on this date, whatever days its routine runs. */
+  date?: DayKey;
 }
 
 /** completions[day][taskId] = epoch ms when it was checked off. */
@@ -58,6 +65,10 @@ export interface Settings {
   /** Skip a reminder if the task is already checked off. */
   smartSkip: boolean;
   onboarded: boolean;
+  /** Alarm-style tasks ring again every few minutes until ticked off. Defaults to true. */
+  alarmRepeats?: boolean;
+  /** This phone's link to a family sync group, if it has joined one. */
+  sync?: { householdId: string; code: string } | null;
   /**
    * Demo clock for showing the app off: the day runs as if it were `time` when the
    * clock was set at `setAt`. Reminders always use the real time.
@@ -72,4 +83,6 @@ export interface AkolState {
   tasks: Task[];
   completions: Completions;
   settings: Settings;
+  /** When the family, routines or tasks last changed (epoch ms); the newest plan wins in sync. */
+  planUpdatedAt?: number;
 }

@@ -3,6 +3,13 @@ import type { AkolState, ClockTime, Completions, DayKey, Task, Weekday } from '.
 
 export const FAMILY_ID = 'family';
 
+/** One-off tasks live in this routine, which runs every day; each task carries its own date. */
+export const ONE_OFF_ROUTINE_ID = 'r_oneoff';
+
+/** Alarm-style tasks ring again this many minutes apart, this many extra times, until ticked. */
+export const ALARM_REPEAT_MIN = 3;
+export const ALARM_REPEATS = 3;
+
 /** Minutes after a task's time during which it counts as "due now" rather than overdue. */
 export const DUE_WINDOW_MIN = 10;
 /** Minutes before a task's time during which it counts as "coming up". */
@@ -71,13 +78,14 @@ export function tasksForDay(
   memberId?: string,
 ): Task[] {
   const weekday = date.getDay() as Weekday;
-  const active = new Set(
-    state.routines.filter((r) => r.enabled && r.days.includes(weekday)).map((r) => r.id),
-  );
+  const key = dayKey(date);
+  const enabled = new Set(state.routines.filter((r) => r.enabled).map((r) => r.id));
+  const runsToday = new Set(state.routines.filter((r) => r.enabled && r.days.includes(weekday)).map((r) => r.id));
   return sortByTime(
     state.tasks.filter(
       (t) =>
-        active.has(t.routineId) &&
+        // A one-off shows only on its date; a regular task on its routine's days.
+        (t.date ? t.date === key && enabled.has(t.routineId) : runsToday.has(t.routineId)) &&
         (memberId === undefined || t.memberId === memberId || t.memberId === FAMILY_ID),
     ),
   );
@@ -185,6 +193,8 @@ export interface PlannedReminder {
   task: Task;
   at: Date;
   day: DayKey;
+  /** 0 for the reminder itself; 1, 2, 3 for an alarm's repeats. */
+  repeat: number;
 }
 
 /**
@@ -198,7 +208,7 @@ export function planReminders(
   opts: { horizonDays?: number; limit?: number } = {},
 ): PlannedReminder[] {
   const { horizonDays = 4, limit = 60 } = opts;
-  const { notifyFor, smartSkip } = state.settings;
+  const { notifyFor, smartSkip, alarmRepeats = true } = state.settings;
   const wanted = (memberId: string) =>
     notifyFor.length === 0 || memberId === FAMILY_ID || notifyFor.includes(memberId);
 
@@ -208,14 +218,22 @@ export function planReminders(
     const day = dayKey(date);
     for (const task of tasksForDay(state, date)) {
       if (task.remind === false || !wanted(task.memberId)) continue;
-      const at = atTime(date, task.time);
-      if (at.getTime() <= now.getTime()) continue;
       if (smartSkip && isDone(state.completions, day, task.id)) continue;
-      out.push({ task, at, day });
-      if (out.length >= limit) break;
+      const repeats = task.alert === 'alarm' && alarmRepeats && !task.checkpoint ? ALARM_REPEATS : 0;
+      for (let r = 0; r <= repeats; r++) {
+        const at = new Date(atTime(date, task.time).getTime() + r * ALARM_REPEAT_MIN * 60000);
+        if (at.getTime() <= now.getTime()) continue;
+        out.push({ task, at, day, repeat: r });
+      }
     }
   }
-  return out;
+  return out.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, limit);
+}
+
+/** Drop one-off tasks whose date is more than `keepDays` in the past. */
+export function pruneOneOffs(tasks: Task[], today: Date, keepDays = 14): Task[] {
+  const cutoff = dayKey(addDays(today, -keepDays));
+  return tasks.filter((t) => !t.date || t.date >= cutoff);
 }
 
 /** Drop completion history older than `keepDays` so storage stays small. */

@@ -20,6 +20,7 @@ import {
   type ReminderData,
 } from '../lib/notifications';
 import { ConfirmHost } from '../components/ui';
+import { FamilySync } from '../lib/FamilySync';
 import { AkolProvider, useAkol } from '../lib/store';
 import { colors } from '../theme';
 
@@ -79,6 +80,7 @@ export default function RootLayout() {
         <Gate>
           {/* Inside the gate so a tapped reminder can navigate once the router is mounted. */}
           <NotificationBridge />
+          <FamilySync />
           <Stack
             screenOptions={{
               headerShown: false,

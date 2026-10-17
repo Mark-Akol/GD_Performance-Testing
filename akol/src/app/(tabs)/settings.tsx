@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '../../components/Avatar';
+import { BackupCard, FamilySyncCard } from '../../components/SettingsCards';
 import {
   Card,
   Chip,
@@ -127,6 +128,12 @@ export default function Settings() {
               value={settings.smartSkip}
               onChange={(smartSkip) => dispatch({ type: 'settings', patch: { smartSkip } })}
             />
+            <ToggleRow
+              label="Alarms repeat until done"
+              hint="Items set to Alarm ring again every 3 minutes, up to 3 more times, until ticked."
+              value={settings.alarmRepeats ?? true}
+              onChange={(alarmRepeats) => dispatch({ type: 'settings', patch: { alarmRepeats } })}
+            />
             <Eyebrow style={{ color: colors.textDim, fontSize: 10, marginTop: space.md, marginBottom: space.sm }}>
               Remind this device about
             </Eyebrow>
@@ -162,7 +169,7 @@ export default function Settings() {
           label="Demo clock"
           hint={
             settings.demoClock
-              ? `Akol is running as if the day started at ${formatTime(settings.demoClock.time)}. Reminders still use real time.`
+              ? `Akol is running as if the day started at ${formatTime(settings.demoClock.time)}; reminders still use real time.`
               : 'Run the day from 6:48am so the school-morning routine is live.'
           }
           value={!!settings.demoClock}
@@ -172,10 +179,18 @@ export default function Settings() {
         />
       </Card>
 
+      <SectionHeader title="Family sync" />
+      <FamilySyncCard />
+
+      <SectionHeader title="Backup" />
+      <BackupCard />
+
       <SectionHeader title="Your data" />
       <Card style={{ gap: space.md }}>
         <Dim style={{ fontSize: 13 }}>
-          Everything is stored privately on this device. No account, no tracking.
+          {settings.sync
+            ? 'Stored on this device and shared with your family’s phones. No passwords, no tracking.'
+            : 'Everything is stored privately on this device. No account, no tracking.'}
         </Dim>
         <GhostButton
           label="Clear today's ticks"

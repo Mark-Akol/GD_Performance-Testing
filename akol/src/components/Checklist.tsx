@@ -97,6 +97,7 @@ export function TaskRow({
         <Text style={[s.itemTitle, lit && { color: colors.onPaper }, done && s.itemDone]} numberOfLines={2}>
           {task.title}
         </Text>
+        {!!task.date && !done && <Text style={s.oneOffTag}>one-off</Text>}
         {!done && !lit && (status !== 'upcoming' || !!task.note) && (
           <View style={s.meta}>
             {isToday && <StatusMark status={status} now={now} time={task.time} />}
@@ -258,6 +259,7 @@ const s = StyleSheet.create({
   late: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 2, textTransform: 'uppercase', color: colors.text },
   soon: { fontFamily: fonts.italic, fontSize: 14, color: colors.text },
   note: { fontFamily: fonts.light, fontSize: 13, color: colors.textDim, flexShrink: 1 },
+  oneOffTag: { fontFamily: fonts.italic, fontSize: 12, color: colors.textDim },
   litNote: { fontFamily: fonts.semibold, fontSize: 10.5, letterSpacing: 2, textTransform: 'uppercase', color: colors.onPaper },
   check: { borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
 
